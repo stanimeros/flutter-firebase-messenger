@@ -52,8 +52,10 @@ class _AddAppTabState extends State<AddAppTab> {
     _loadApps();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('App saved successfully')),
+      ShadToaster.of(context).show(
+        const ShadToast(
+          description: Text('App saved successfully'),
+        ),
       );
     }
   }
@@ -61,15 +63,15 @@ class _AddAppTabState extends State<AddAppTab> {
   Future<void> _deleteApp(AppModel app) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => ShadDialog(
         title: const Text('Delete App'),
-        content: Text('Are you sure you want to delete ${app.name}?'),
+        description: Text('Are you sure you want to delete ${app.name}?'),
         actions: [
-          TextButton(
+          ShadButton.outline(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ShadButton.destructive(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -81,8 +83,10 @@ class _AddAppTabState extends State<AddAppTab> {
       await _appStorage.deleteApp(app.id);
       _loadApps();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App deleted')),
+        ShadToaster.of(context).show(
+          const ShadToast(
+            description: Text('App deleted'),
+          ),
         );
       }
     }
@@ -103,7 +107,7 @@ class _AddAppTabState extends State<AddAppTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
+          ShadCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -116,45 +120,35 @@ class _AddAppTabState extends State<AddAppTab> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadInputFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'App Name',
-                        hintText: 'My Awesome App',
-                        border: OutlineInputBorder(),
-                      ),
+                      placeholder: const Text('My Awesome App'),
+                      label: const Text('App Name'),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value.isEmpty) {
                           return 'Please enter app name';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadInputFormField(
                       controller: _packageController,
-                      decoration: const InputDecoration(
-                        labelText: 'Package Name',
-                        hintText: 'com.example.app',
-                        border: OutlineInputBorder(),
-                      ),
+                      placeholder: const Text('com.example.app'),
+                      label: const Text('Package Name'),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value.isEmpty) {
                           return 'Please enter package name';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadTextareaFormField(
                       controller: _serverKeyController,
-                      decoration: const InputDecoration(
-                        labelText: 'Server Key (Optional)',
-                        hintText: 'AAA...',
-                        border: OutlineInputBorder(),
-                        helperText: 'FCM Server Key from Firebase Console',
-                      ),
-                      maxLines: 3,
+                      placeholder: const Text('AAA...'),
+                      label: const Text('Server Key (Optional)'),
+                      description: const Text('FCM Server Key from Firebase Console'),
                     ),
                     const SizedBox(height: 16),
                     ShadButton(
@@ -173,7 +167,7 @@ class _AddAppTabState extends State<AddAppTab> {
           ),
           const SizedBox(height: 16),
           if (_apps.isEmpty)
-            Card(
+            ShadCard(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
@@ -196,15 +190,15 @@ class _AddAppTabState extends State<AddAppTab> {
               ),
             )
           else
-            ..._apps.map((app) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
+            ..._apps.map((app) => ShadCard(
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: const CircleAvatar(
                       child: HeroIcon(HeroIcons.devicePhoneMobile),
                     ),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
-                    trailing: IconButton(
+                    trailing: ShadIconButton(
                       icon: const HeroIcon(HeroIcons.trash),
                       onPressed: () => _deleteApp(app),
                     ),

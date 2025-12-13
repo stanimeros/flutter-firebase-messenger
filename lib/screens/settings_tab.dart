@@ -65,19 +65,17 @@ class _SettingsTabState extends State<SettingsTab> {
           await _checkCredentials();
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Credentials saved successfully'),
-                backgroundColor: Colors.green,
+            ShadToaster.of(context).show(
+              const ShadToast(
+                description: Text('Credentials saved successfully'),
               ),
             );
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Invalid JSON file: $e'),
-                backgroundColor: Colors.red,
+            ShadToaster.of(context).show(
+              ShadToast.destructive(
+                description: Text('Invalid JSON file: $e'),
               ),
             );
           }
@@ -85,10 +83,9 @@ class _SettingsTabState extends State<SettingsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading file: $e'),
-            backgroundColor: Colors.red,
+        ShadToaster.of(context).show(
+          ShadToast.destructive(
+            description: Text('Error loading file: $e'),
           ),
         );
       }
@@ -98,18 +95,17 @@ class _SettingsTabState extends State<SettingsTab> {
   Future<void> _deleteCredentials() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => ShadDialog(
         title: const Text('Delete Credentials'),
-        content: const Text(
+        description: const Text(
             'Are you sure you want to delete saved Firebase credentials?'),
         actions: [
-          TextButton(
+          ShadButton.outline(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ShadButton.destructive(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -121,8 +117,10 @@ class _SettingsTabState extends State<SettingsTab> {
       await _checkCredentials();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Credentials deleted')),
+        ShadToaster.of(context).show(
+          const ShadToast(
+            description: Text('Credentials deleted'),
+          ),
         );
       }
     }
@@ -135,7 +133,7 @@ class _SettingsTabState extends State<SettingsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
+          ShadCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -153,68 +151,55 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   const SizedBox(height: 16),
                   if (_hasCredentials)
-                    Card(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            const HeroIcon(
-                              HeroIcons.checkCircle,
-                              color: Colors.green,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Credentials loaded',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
-                                    ),
+                    ShadAlert(
+                      title: Row(
+                        children: [
+                          const HeroIcon(
+                            HeroIcons.checkCircle,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Credentials loaded',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  if (_credentialsInfo != null)
-                                    Text(
-                                      _credentialsInfo!,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                ],
-                              ),
+                                ),
+                                if (_credentialsInfo != null)
+                                  Text(
+                                    _credentialsInfo!,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                              ],
                             ),
-                            IconButton(
-                              icon: const HeroIcon(HeroIcons.trash),
-                              onPressed: _deleteCredentials,
-                              color: Colors.red,
-                            ),
-                          ],
-                        ),
+                          ),
+                          ShadIconButton(
+                            icon: const HeroIcon(HeroIcons.trash),
+                            onPressed: _deleteCredentials,
+                          ),
+                        ],
                       ),
                     )
                   else
-                    Card(
-                      color: Colors.orange.withValues(alpha: 0.1),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            const HeroIcon(
-                              HeroIcons.exclamationTriangle,
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                'No credentials loaded',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
-                                ),
+                    ShadAlert.destructive(
+                      title: const Row(
+                        children: [
+                          HeroIcon(
+                            HeroIcons.exclamationTriangle,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'No credentials loaded',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 16),
@@ -240,7 +225,7 @@ class _SettingsTabState extends State<SettingsTab> {
             ),
           ),
           const SizedBox(height: 24),
-          Card(
+          ShadCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

@@ -70,16 +70,20 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
   Future<void> _sendNotification() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedApp == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an app')),
+      ShadToaster.of(context).show(
+        const ShadToast(
+          description: Text('Please select an app'),
+        ),
       );
       return;
     }
 
     if (_topicController.text.trim().isEmpty && 
         _tokensController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide either topic or tokens')),
+      ShadToaster.of(context).show(
+        const ShadToast(
+          description: Text('Please provide either topic or tokens'),
+        ),
       );
       return;
     }
@@ -130,12 +134,11 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
       await _notificationStorage.saveNotification(savedNotification);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success 
-                ? 'Notification sent successfully' 
-                : 'Failed to send notification'),
-            backgroundColor: success ? Colors.green : Colors.red,
+        ShadToaster.of(context).show(
+          success ? ShadToast(
+            description: Text('Notification sent successfully'),
+          ) : ShadToast.destructive(
+            description: Text('Failed to send notification'),
           ),
         );
 
@@ -177,10 +180,9 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
       await _notificationStorage.saveNotification(notification);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+        ShadToaster.of(context).show(
+          ShadToast.destructive(
+            description: Text('Error: $e'),
           ),
         );
       }
@@ -214,7 +216,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
+            ShadCard(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -226,102 +228,73 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                     ),
                     const SizedBox(height: 16),
                     if (_apps.isEmpty)
-                      const Card(
-                        color: Colors.orange,
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'Please add an app first before creating notifications',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                      ShadAlert.destructive(
+                        description: const Text(
+                          'Please add an app first before creating notifications',
                         ),
                       )
                     else
-                      DropdownButtonFormField<AppModel>(
+                      ShadSelectFormField<AppModel>(
                         initialValue: _selectedApp,
-                        decoration: const InputDecoration(
-                          labelText: 'Select App',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _apps.map((app) {
-                          return DropdownMenuItem(
-                            value: app,
-                            child: Text(app.name),
-                          );
-                        }).toList(),
+                        placeholder: const Text('Choose an app'),
+                        options: _apps.map((app) => ShadOption(value: app, child: Text(app.name))).toList(),
                         onChanged: (app) {
                           setState(() {
                             _selectedApp = app;
                           });
-                        },
+                        }, 
+                        selectedOptionBuilder: (BuildContext context, AppModel value) { return Text(value.name); },
                       ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadInputFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        hintText: 'Notification title',
-                        border: OutlineInputBorder(),
-                      ),
+                      placeholder: const Text('Notification title'),
+                      label: const Text('Title'),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value.isEmpty) {
                           return 'Please enter title';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadTextareaFormField(
                       controller: _bodyController,
-                      decoration: const InputDecoration(
-                        labelText: 'Body',
-                        hintText: 'Notification body text',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
+                      placeholder: const Text('Notification body text'),
+                      label: const Text('Body'),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value.isEmpty) {
                           return 'Please enter body';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadInputFormField(
                       controller: _imageUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'Image URL (Optional)',
-                        hintText: 'https://example.com/image.jpg',
-                        border: OutlineInputBorder(),
-                      ),
+                      placeholder: const Text('https://example.com/image.jpg'),
+                      label: const Text('Image URL (Optional)'),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadInputFormField(
                       controller: _topicController,
-                      decoration: const InputDecoration(
-                        labelText: 'Topic (Optional)',
-                        hintText: 'news',
-                        border: OutlineInputBorder(),
-                        helperText: 'Send to a topic or provide tokens below',
-                      ),
+                      placeholder: const Text('news'),
+                      label: const Text('Topic (Optional)'),
+                      description: const Text('Send to a topic or provide tokens below'),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    ShadTextareaFormField(
                       controller: _tokensController,
-                      decoration: const InputDecoration(
-                        labelText: 'Device Tokens (Optional)',
-                        hintText: 'token1, token2, token3',
-                        border: OutlineInputBorder(),
-                        helperText: 'Comma-separated FCM device tokens',
-                      ),
-                      maxLines: 3,
+                      placeholder: const Text('token1, token2, token3'),
+                      label: const Text('Device Tokens (Optional)'),
+                      description: const Text('Comma-separated FCM device tokens'),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Card(
+            ShadCard(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -335,22 +308,18 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextFormField(
+                          child: ShadInputFormField(
                             controller: _dataKeyController,
-                            decoration: const InputDecoration(
-                              labelText: 'Key',
-                              border: OutlineInputBorder(),
-                            ),
+                            placeholder: const Text('Key'),
+                            label: const Text('Key'),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: TextFormField(
+                          child: ShadInputFormField(
                             controller: _dataValueController,
-                            decoration: const InputDecoration(
-                              labelText: 'Value',
-                              border: OutlineInputBorder(),
-                            ),
+                            placeholder: const Text('Value'),
+                            label: const Text('Value'),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -362,12 +331,12 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                     ),
                     if (_customData.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      ..._customData.entries.map((entry) => Card(
-                            margin: const EdgeInsets.only(bottom: 8),
+                      ..._customData.entries.map((entry) => ShadCard(
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(entry.key),
                               subtitle: Text(entry.value),
-                              trailing: IconButton(
+                              trailing: ShadIconButton(
                                 icon: const HeroIcon(HeroIcons.xMark),
                                 onPressed: () => _removeCustomData(entry.key),
                               ),
