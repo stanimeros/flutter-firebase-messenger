@@ -40,6 +40,39 @@ class _AddAppScreenState extends State<AddAppScreen> with AutomaticKeepAliveClie
     });
   }
 
+  Widget _buildAppLogo(String? logoFilePath) {
+    if (logoFilePath == null) {
+      return const CircleAvatar(
+        child: HeroIcon(HeroIcons.devicePhoneMobile),
+      );
+    }
+
+    return FutureBuilder<bool>(
+      future: File(logoFilePath).exists(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data == true) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.file(
+              File(logoFilePath),
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const CircleAvatar(
+                  child: HeroIcon(HeroIcons.devicePhoneMobile),
+                );
+              },
+            ),
+          );
+        }
+        return const CircleAvatar(
+          child: HeroIcon(HeroIcons.devicePhoneMobile),
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -81,24 +114,7 @@ class _AddAppScreenState extends State<AddAppScreen> with AutomaticKeepAliveClie
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: app.logoFilePath != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.file(
-                              File(app.logoFilePath!),
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const CircleAvatar(
-                                  child: HeroIcon(HeroIcons.devicePhoneMobile),
-                                );
-                              },
-                            ),
-                          )
-                        : const CircleAvatar(
-                            child: HeroIcon(HeroIcons.devicePhoneMobile),
-                          ),
+                    leading: _buildAppLogo(app.logoFilePath),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
                     trailing: IconButton(

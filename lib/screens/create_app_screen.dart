@@ -162,6 +162,84 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     }
   }
 
+  Widget _buildLogoPreview() {
+    if (_selectedLogoFilePath == null) {
+      return Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.grey,
+            width: 2,
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: const Icon(
+          Icons.image,
+          size: 50,
+          color: Colors.grey,
+        ),
+      );
+    }
+
+    return FutureBuilder<bool>(
+      future: File(_selectedLogoFilePath!).exists(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data == true) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              File(_selectedLogoFilePath!),
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey,
+                      width: 2,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.image,
+                    size: 50,
+                    color: Colors.grey,
+                  ),
+                );
+              },
+            ),
+          );
+        }
+        return Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.grey,
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: const Icon(
+            Icons.image,
+            size: 50,
+            color: Colors.grey,
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _pickLogoFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -281,35 +359,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           onTap: _pickLogoFile,
                           child: Stack(
                             children: [
-                              if (_selectedLogoFilePath != null)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(_selectedLogoFilePath!),
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              else
-                                Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey,
-                                      width: 2,
-                                      style: BorderStyle.solid,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.image,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                              _buildLogoPreview(),
                               Positioned(
                                 bottom: 0,
                                 right: 0,

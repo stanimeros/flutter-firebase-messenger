@@ -21,8 +21,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
-  final _dataKeyController = TextEditingController();
-  final _dataValueController = TextEditingController();
 
   @override
   bool get wantKeepAlive => true;
@@ -70,15 +68,21 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     });
   }
 
-  void _addCustomData() {
-    final key = _dataKeyController.text.trim();
-    final value = _dataValueController.text.trim();
-    if (key.isNotEmpty && value.isNotEmpty) {
-      setState(() {
-        _customData[key] = value;
-        _dataKeyController.clear();
-        _dataValueController.clear();
-      });
+  Future<void> _showAddCustomDataDialog() async {
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => const _AddCustomDataDialog(),
+    );
+
+    if (result != null && result.containsKey('key') && result.containsKey('value')) {
+      final key = result['key']!;
+      final value = result['value']!;
+      
+      if (key.isNotEmpty && value.isNotEmpty) {
+        setState(() {
+          _customData[key] = value;
+        });
+      }
     }
   }
 
@@ -204,8 +208,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
-    _dataKeyController.dispose();
-    _dataValueController.dispose();
     super.dispose();
   }
 
@@ -326,46 +328,66 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         } : null,
                       ),
                       const SizedBox(height: 16),
-                      if (_users.isNotEmpty) ...[
-                        Text(
-                          'Select Users (Optional)',
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
+                      Text(
+                        'Select Users (Optional)',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Opacity(
+                        opacity: _users.isEmpty ? 0.5 : 1.0,
+                        child: IgnorePointer(
+                          ignoring: _users.isEmpty,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              maxHeight: 200,
+                              minHeight: 50,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: _users.isEmpty
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'No users available',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: _users.length,
+                                    itemBuilder: (context, index) {
+                                      final user = _users[index];
+                                      return CheckboxListTile(
+                                        title: Text(user.name),
+                                        subtitle: Text(
+                                          user.notificationToken,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        value: _selectedUserIds.contains(user.id),
+                                        onChanged: (checked) {
+                                          setState(() {
+                                            if (checked == true) {
+                                              _selectedUserIds.add(user.id);
+                                              _selectedTopic = null;
+                                            } else {
+                                              _selectedUserIds.remove(user.id);
+                                            }
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
                           ),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _users.length,
-                            itemBuilder: (context, index) {
-                              final user = _users[index];
-                              return CheckboxListTile(
-                                title: Text(user.name),
-                                subtitle: Text(
-                                  user.notificationToken,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                value: _selectedUserIds.contains(user.id),
-                                onChanged: (checked) {
-                                  setState(() {
-                                    if (checked == true) {
-                                      _selectedUserIds.add(user.id);
-                                      _selectedTopic = null;
-                                    } else {
-                                      _selectedUserIds.remove(user.id);
-                                    }
-                                  });
-                                },
-                              );
-                            },
-                          ),
                         ),
-                      ],
+                      ),
                     ],
                   ],
                 ),
@@ -378,40 +400,17 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Custom Data',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _dataKeyController,
-                            enabled: _selectedApp != null,
-                            decoration: const InputDecoration(
-                              labelText: 'Key',
-                              hintText: 'Key',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
+                        Text(
+                          'Custom Data',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _dataValueController,
-                            enabled: _selectedApp != null,
-                            decoration: const InputDecoration(
-                              labelText: 'Value',
-                              hintText: 'Value',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: _selectedApp != null ? _addCustomData : null,
-                          child: const Text('Add'),
+                        ElevatedButton.icon(
+                          onPressed: _selectedApp != null ? _showAddCustomDataDialog : null,
+                          icon: const HeroIcon(HeroIcons.plus),
+                          label: const Text('Add Data'),
                         ),
                       ],
                     ),
@@ -428,6 +427,24 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                               ),
                             ),
                           )),
+                    ] else ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'No custom data added',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -478,6 +495,92 @@ extension NotificationModelExtension on NotificationModel {
       createdAt: createdAt ?? this.createdAt,
       sent: sent ?? this.sent,
       error: error ?? this.error,
+    );
+  }
+}
+
+class _AddCustomDataDialog extends StatefulWidget {
+  const _AddCustomDataDialog();
+
+  @override
+  State<_AddCustomDataDialog> createState() => _AddCustomDataDialogState();
+}
+
+class _AddCustomDataDialogState extends State<_AddCustomDataDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _keyController = TextEditingController();
+  final _valueController = TextEditingController();
+
+  @override
+  void dispose() {
+    _keyController.dispose();
+    _valueController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Custom Data'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _keyController,
+                decoration: const InputDecoration(
+                  labelText: 'Key',
+                  hintText: 'Enter key',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a key';
+                  }
+                  return null;
+                },
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _valueController,
+                decoration: const InputDecoration(
+                  labelText: 'Value',
+                  hintText: 'Enter value',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a value';
+                  }
+                  return null;
+                },
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, {
+                'key': _keyController.text.trim(),
+                'value': _valueController.text.trim(),
+              });
+            }
+          },
+          child: const Text('Add'),
+        ),
+      ],
     );
   }
 }
