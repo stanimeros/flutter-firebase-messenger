@@ -10,18 +10,17 @@ import '../services/topic_storage_service.dart';
 import '../services/user_storage_service.dart';
 import '../services/fcm_service.dart';
 
-class CreateNotificationTab extends StatefulWidget {
-  const CreateNotificationTab({super.key});
+class CreateNotificationScreen extends StatefulWidget {
+  const CreateNotificationScreen({super.key});
 
   @override
-  State<CreateNotificationTab> createState() => _CreateNotificationTabState();
+  State<CreateNotificationScreen> createState() => _CreateNotificationScreenState();
 }
 
-class _CreateNotificationTabState extends State<CreateNotificationTab> {
+class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
-  final _imageUrlController = TextEditingController();
   final _dataKeyController = TextEditingController();
   final _dataValueController = TextEditingController();
 
@@ -113,9 +112,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
         appName: _selectedApp!.name,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
-        imageUrl: _imageUrlController.text.trim().isEmpty 
-            ? null 
-            : _imageUrlController.text.trim(),
+        imageUrl: null,
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
         tokens: _selectedUserIds.isEmpty
@@ -131,7 +128,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
         app: _selectedApp!,
         title: notification.title,
         body: notification.body,
-        imageUrl: notification.imageUrl,
+        imageUrl: null,
         data: notification.data,
         topic: notification.topic,
         tokens: notification.tokens,
@@ -155,7 +152,6 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
         if (success) {
           _titleController.clear();
           _bodyController.clear();
-          _imageUrlController.clear();
           setState(() {
             _selectedTopic = null;
             _selectedUserIds.clear();
@@ -170,9 +166,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
         appName: _selectedApp!.name,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
-        imageUrl: _imageUrlController.text.trim().isEmpty 
-            ? null 
-            : _imageUrlController.text.trim(),
+        imageUrl: null,
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
         tokens: _selectedUserIds.isEmpty
@@ -209,7 +203,6 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
-    _imageUrlController.dispose();
     _dataKeyController.dispose();
     _dataValueController.dispose();
     super.dispose();
@@ -301,16 +294,6 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                         }
                         return null;
                       },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _imageUrlController,
-                      enabled: _selectedApp != null,
-                      decoration: const InputDecoration(
-                        labelText: 'Image URL (Optional)',
-                        hintText: 'https://example.com/image.jpg',
-                        border: OutlineInputBorder(),
-                      ),
                     ),
                     if (_selectedApp != null) ...[
                       const SizedBox(height: 16),

@@ -5,6 +5,7 @@ import '../models/topic_model.dart';
 import '../models/user_model.dart';
 import '../services/topic_storage_service.dart';
 import '../services/user_storage_service.dart';
+import 'create_app_screen.dart';
 
 class AppDetailScreen extends StatefulWidget {
   final AppModel app;
@@ -189,6 +190,24 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.app.name),
+        actions: [
+          IconButton(
+            icon: const HeroIcon(HeroIcons.pencil),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateAppScreen(app: widget.app),
+                ),
+              );
+              if (result == true && context.mounted) {
+                // Reload the app data if it was updated
+                Navigator.pop(context, true);
+              }
+            },
+            tooltip: 'Edit App',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

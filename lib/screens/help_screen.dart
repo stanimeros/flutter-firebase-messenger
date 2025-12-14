@@ -107,7 +107,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                     '• App Name: Enter a descriptive name for your mobile app\n'
                     '• Package Name: Enter the package name (e.g., com.example.app)\n'
                     '• Logo: Optionally select an image file for your app logo\n'
-                    '• JSON File: Select your Firebase service account JSON file (required)',
+                    '• JSON File: Select your Firebase service account JSON file (required). For the JSON file, ask your developer to create a key through a service account with Firebase Cloud Messaging Admin API as role.',
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -204,8 +204,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 8),
                   const Text(
                     '• Title: The notification title (required)\n'
-                    '• Body: The notification message text (required)\n'
-                    '• Image URL: Optional image to display in the notification',
+                    '• Body: The notification message text (required)',
                   ),
                   const SizedBox(height: 16),
                   const Text(

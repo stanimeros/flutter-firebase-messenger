@@ -4,14 +4,14 @@ import 'package:intl/intl.dart';
 import '../models/notification_model.dart';
 import '../services/notification_storage_service.dart';
 
-class HistoryTab extends StatefulWidget {
-  const HistoryTab({super.key});
+class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({super.key});
 
   @override
-  State<HistoryTab> createState() => _HistoryTabState();
+  State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryTabState extends State<HistoryTab> {
+class _HistoryScreenState extends State<HistoryScreen> {
   final _notificationStorage = NotificationStorageService();
   List<NotificationModel> _notifications = [];
 

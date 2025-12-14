@@ -4,6 +4,7 @@ class AppModel {
   final String packageName;
   final String jsonFilePath;
   final String? logoFilePath;
+  final List<String>? testNotificationTokens;
   final DateTime createdAt;
 
   AppModel({
@@ -12,6 +13,7 @@ class AppModel {
     required this.packageName,
     required this.jsonFilePath,
     this.logoFilePath,
+    this.testNotificationTokens,
     required this.createdAt,
   });
 
@@ -22,6 +24,7 @@ class AppModel {
       'packageName': packageName,
       'jsonFilePath': jsonFilePath,
       'logoFilePath': logoFilePath,
+      'testNotificationTokens': testNotificationTokens,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -33,6 +36,9 @@ class AppModel {
       packageName: json['packageName'] as String,
       jsonFilePath: json['jsonFilePath'] as String? ?? json['serverKey'] as String? ?? '',
       logoFilePath: json['logoFilePath'] as String?,
+      testNotificationTokens: json['testNotificationTokens'] != null
+          ? List<String>.from(json['testNotificationTokens'] as List)
+          : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -43,6 +49,7 @@ class AppModel {
     String? packageName,
     String? jsonFilePath,
     String? logoFilePath,
+    List<String>? testNotificationTokens,
     DateTime? createdAt,
   }) {
     return AppModel(
@@ -51,6 +58,7 @@ class AppModel {
       packageName: packageName ?? this.packageName,
       jsonFilePath: jsonFilePath ?? this.jsonFilePath,
       logoFilePath: logoFilePath ?? this.logoFilePath,
+      testNotificationTokens: testNotificationTokens ?? this.testNotificationTokens,
       createdAt: createdAt ?? this.createdAt,
     );
   }

@@ -8,7 +8,9 @@ import '../models/app_model.dart';
 import '../services/app_storage_service.dart';
 
 class CreateAppScreen extends StatefulWidget {
-  const CreateAppScreen({super.key});
+  final AppModel? app;
+  
+  const CreateAppScreen({super.key, this.app});
 
   @override
   State<CreateAppScreen> createState() => _CreateAppScreenState();
@@ -18,11 +20,30 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _packageController = TextEditingController();
+  final _testTokensController = TextEditingController();
   final _appStorage = AppStorageService();
   String? _selectedJsonFilePath;
   String? _selectedJsonFileName;
   String? _selectedLogoFilePath;
   String? _selectedLogoFileName;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.app != null) {
+      _nameController.text = widget.app!.name;
+      _packageController.text = widget.app!.packageName;
+      _selectedJsonFilePath = widget.app!.jsonFilePath;
+      _selectedJsonFileName = widget.app!.jsonFilePath.split('/').last;
+      _selectedLogoFilePath = widget.app!.logoFilePath;
+      if (_selectedLogoFilePath != null) {
+        _selectedLogoFileName = _selectedLogoFilePath!.split('/').last;
+      }
+      if (widget.app!.testNotificationTokens != null && widget.app!.testNotificationTokens!.isNotEmpty) {
+        _testTokensController.text = widget.app!.testNotificationTokens!.join('\n');
+      }
+    }
+  }
 
   Future<void> _pickJsonFile() async {
     try {
@@ -124,20 +145,30 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       return;
     }
 
+    final testTokensText = _testTokensController.text.trim();
+    final testTokens = testTokensText.isEmpty
+        ? null
+        : testTokensText
+            .split('\n')
+            .map((token) => token.trim())
+            .where((token) => token.isNotEmpty)
+            .toList();
+
     final app = AppModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.app?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       packageName: _packageController.text.trim(),
       jsonFilePath: _selectedJsonFilePath!,
       logoFilePath: _selectedLogoFilePath,
-      createdAt: DateTime.now(),
+      testNotificationTokens: testTokens?.isEmpty ?? true ? null : testTokens,
+      createdAt: widget.app?.createdAt ?? DateTime.now(),
     );
 
     await _appStorage.saveApp(app);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('App saved successfully')),
+        SnackBar(content: Text(widget.app == null ? 'App saved successfully' : 'App updated successfully')),
       );
       Navigator.pop(context, true);
     }
@@ -147,6 +178,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   void dispose() {
     _nameController.dispose();
     _packageController.dispose();
+    _testTokensController.dispose();
     super.dispose();
   }
 
@@ -154,7 +186,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create App'),
+        title: Text(widget.app == null ? 'Create App' : 'Edit App'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -272,6 +304,17 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         'Select your Firebase service account JSON file. This file is required.',
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _testTokensController,
+                        decoration: const InputDecoration(
+                          labelText: 'Test Notification Tokens',
+                          hintText: 'Enter FCM tokens, one per line',
+                          border: OutlineInputBorder(),
+                          helperText: 'Enter FCM device tokens for testing notifications locally, one token per line',
+                        ),
+                        maxLines: 5,
+                      ),
                     ],
                   ),
                 ),
@@ -279,7 +322,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _saveApp,
-                child: const Text('Save App'),
+                child: Text(widget.app == null ? 'Save App' : 'Update App'),
               ),
             ],
           ),

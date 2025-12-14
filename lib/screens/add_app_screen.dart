@@ -6,14 +6,14 @@ import '../services/app_storage_service.dart';
 import 'app_detail_screen.dart';
 import 'create_app_screen.dart';
 
-class AddAppTab extends StatefulWidget {
-  const AddAppTab({super.key});
+class AddAppScreen extends StatefulWidget {
+  const AddAppScreen({super.key});
 
   @override
-  State<AddAppTab> createState() => _AddAppTabState();
+  State<AddAppScreen> createState() => _AddAppScreenState();
 }
 
-class _AddAppTabState extends State<AddAppTab> {
+class _AddAppScreenState extends State<AddAppScreen> {
   final _appStorage = AppStorageService();
   List<AppModel> _apps = [];
 
@@ -134,6 +134,21 @@ class _AddAppTabState extends State<AddAppTab> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
+                          icon: const HeroIcon(HeroIcons.pencil),
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CreateAppScreen(app: app),
+                              ),
+                            );
+                            if (result == true) {
+                              _loadApps();
+                            }
+                          },
+                          tooltip: 'Edit',
+                        ),
+                        IconButton(
                           icon: const HeroIcon(HeroIcons.arrowRight),
                           onPressed: () {
                             Navigator.push(
@@ -143,10 +158,12 @@ class _AddAppTabState extends State<AddAppTab> {
                               ),
                             ).then((_) => _loadApps());
                           },
+                          tooltip: 'View Details',
                         ),
                         IconButton(
                           icon: const HeroIcon(HeroIcons.trash),
                           onPressed: () => _deleteApp(app),
+                          tooltip: 'Delete',
                         ),
                       ],
                     ),
