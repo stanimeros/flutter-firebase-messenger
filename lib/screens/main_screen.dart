@@ -3,6 +3,7 @@ import 'package:heroicons/heroicons.dart';
 import 'add_app_tab.dart';
 import 'create_notification_tab.dart';
 import 'history_tab.dart';
+import 'help_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -25,6 +26,20 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Firebase Messenger'),
+        actions: [
+          IconButton(
+            icon: const HeroIcon(HeroIcons.questionMarkCircle),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpScreen(),
+                ),
+              );
+            },
+            tooltip: 'Help',
+          ),
+        ],
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
