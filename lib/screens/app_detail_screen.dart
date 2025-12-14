@@ -3,6 +3,7 @@ import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
 import '../models/topic_model.dart';
 import '../models/user_model.dart';
+import '../services/app_storage_service.dart';
 import '../services/topic_storage_service.dart';
 import '../services/user_storage_service.dart';
 import '../widgets/custom_app_bar.dart';
@@ -19,15 +20,12 @@ class AppDetailScreen extends StatefulWidget {
 
 class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _appStorage = AppStorageService();
   final _topicStorage = TopicStorageService();
   final _userStorage = UserStorageService();
   
   List<TopicModel> _topics = [];
   List<UserModel> _users = [];
-  
-  final _topicNameController = TextEditingController();
-  final _userNameController = TextEditingController();
-  final _userTokenController = TextEditingController();
 
   @override
   void initState() {
@@ -45,33 +43,28 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     });
   }
 
-  Future<void> _addTopic() async {
-    final name = _topicNameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please enter topic name'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      return;
-    }
-
-    final topic = TopicModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      appId: widget.app.id,
-      name: name,
-      createdAt: DateTime.now(),
+  Future<void> _showAddTopicDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => const _AddTopicDialog(),
     );
 
-    await _topicStorage.saveTopic(topic);
-    _topicNameController.clear();
-    _loadData();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Topic added successfully')),
+    if (result != null && result.isNotEmpty) {
+      final topic = TopicModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        appId: widget.app.id,
+        name: result,
+        createdAt: DateTime.now(),
       );
+
+      await _topicStorage.saveTopic(topic);
+      _loadData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Topic added successfully')),
+        );
+      }
     }
   }
 
@@ -109,37 +102,63 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     }
   }
 
-  Future<void> _addUser() async {
-    final name = _userNameController.text.trim();
-    final token = _userTokenController.text.trim();
-    
-    if (name.isEmpty || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please enter both name and token'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      return;
-    }
-
-    final user = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      appId: widget.app.id,
-      name: name,
-      notificationToken: token,
-      createdAt: DateTime.now(),
+  Future<void> _showAddUserDialog() async {
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => const _AddUserDialog(),
     );
 
-    await _userStorage.saveUser(user);
-    _userNameController.clear();
-    _userTokenController.clear();
-    _loadData();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User added successfully')),
+    if (result != null && result.containsKey('name') && result.containsKey('token')) {
+      final user = UserModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        appId: widget.app.id,
+        name: result['name']!,
+        notificationToken: result['token']!,
+        createdAt: DateTime.now(),
       );
+
+      await _userStorage.saveUser(user);
+      _loadData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User added successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteApp() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete App'),
+        content: Text('Are you sure you want to delete ${widget.app.name}? This action cannot be undone.'),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _appStorage.deleteApp(widget.app.id);
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('App deleted')),
+        );
+      }
     }
   }
 
@@ -180,9 +199,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   @override
   void dispose() {
     _tabController.dispose();
-    _topicNameController.dispose();
-    _userNameController.dispose();
-    _userTokenController.dispose();
     super.dispose();
   }
 
@@ -211,6 +227,14 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
               }
             },
             tooltip: 'Edit App',
+          ),
+          IconButton(
+            icon: const HeroIcon(
+              HeroIcons.trash,
+              color: Colors.white,
+            ),
+            onPressed: _deleteApp,
+            tooltip: 'Delete App',
           ),
         ],
       ),
@@ -243,33 +267,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Add Topic',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _topicNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Topic Name',
-                      hintText: 'news',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _addTopic,
-                    child: const Text('Add Topic'),
-                  ),
-                ],
-              ),
-            ),
+          ElevatedButton.icon(
+            onPressed: _showAddTopicDialog,
+            icon: const HeroIcon(HeroIcons.plus),
+            label: const Text('Add Topic'),
           ),
           const SizedBox(height: 24),
           Text(
@@ -325,43 +326,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Add User',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _userNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'User Name',
-                      hintText: 'John Doe',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _userTokenController,
-                    decoration: const InputDecoration(
-                      labelText: 'Notification Token',
-                      hintText: 'FCM device token',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _addUser,
-                    child: const Text('Add User'),
-                  ),
-                ],
-              ),
-            ),
+          ElevatedButton.icon(
+            onPressed: _showAddUserDialog,
+            icon: const HeroIcon(HeroIcons.plus),
+            label: const Text('Add User'),
           ),
           const SizedBox(height: 24),
           Text(
@@ -413,6 +381,150 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                 )),
         ],
       ),
+    );
+  }
+}
+
+class _AddTopicDialog extends StatefulWidget {
+  const _AddTopicDialog();
+
+  @override
+  State<_AddTopicDialog> createState() => _AddTopicDialogState();
+}
+
+class _AddTopicDialogState extends State<_AddTopicDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Topic'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _nameController,
+          decoration: const InputDecoration(
+            labelText: 'Topic Name',
+            hintText: 'news',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter a topic name';
+            }
+            return null;
+          },
+          autofocus: true,
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, _nameController.text.trim());
+            }
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddUserDialog extends StatefulWidget {
+  const _AddUserDialog();
+
+  @override
+  State<_AddUserDialog> createState() => _AddUserDialogState();
+}
+
+class _AddUserDialogState extends State<_AddUserDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _tokenController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add User'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'User Name',
+                  hintText: 'John Doe',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+                textCapitalization: TextCapitalization.words,
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _tokenController,
+                decoration: const InputDecoration(
+                  labelText: 'Notification Token',
+                  hintText: 'FCM device token',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a token';
+                  }
+                  return null;
+                },
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, {
+                'name': _nameController.text.trim(),
+                'token': _tokenController.text.trim(),
+              });
+            }
+          },
+          child: const Text('Add'),
+        ),
+      ],
     );
   }
 }

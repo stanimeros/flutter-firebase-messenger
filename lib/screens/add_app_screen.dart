@@ -13,9 +13,12 @@ class AddAppScreen extends StatefulWidget {
   State<AddAppScreen> createState() => _AddAppScreenState();
 }
 
-class _AddAppScreenState extends State<AddAppScreen> {
+class _AddAppScreenState extends State<AddAppScreen> with AutomaticKeepAliveClientMixin {
   final _appStorage = AppStorageService();
   List<AppModel> _apps = [];
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -37,42 +40,10 @@ class _AddAppScreenState extends State<AddAppScreen> {
     });
   }
 
-  Future<void> _deleteApp(AppModel app) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete App'),
-        content: Text('Are you sure you want to delete ${app.name}?'),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await _appStorage.deleteApp(app.id);
-      _loadApps();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App deleted')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: _apps.isEmpty
           ? Center(
@@ -130,42 +101,17 @@ class _AddAppScreenState extends State<AddAppScreen> {
                           ),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const HeroIcon(HeroIcons.pencil),
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CreateAppScreen(app: app),
-                              ),
-                            );
-                            if (result == true) {
-                              _loadApps();
-                            }
-                          },
-                          tooltip: 'Edit',
-                        ),
-                        IconButton(
-                          icon: const HeroIcon(HeroIcons.arrowRight),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AppDetailScreen(app: app),
-                              ),
-                            ).then((_) => _loadApps());
-                          },
-                          tooltip: 'View Details',
-                        ),
-                        IconButton(
-                          icon: const HeroIcon(HeroIcons.trash),
-                          onPressed: () => _deleteApp(app),
-                          tooltip: 'Delete',
-                        ),
-                      ],
+                    trailing: IconButton(
+                      icon: const HeroIcon(HeroIcons.arrowRight),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AppDetailScreen(app: app),
+                          ),
+                        ).then((_) => _loadApps());
+                      },
+                      tooltip: 'View Details',
                     ),
                     onTap: () {
                       Navigator.push(

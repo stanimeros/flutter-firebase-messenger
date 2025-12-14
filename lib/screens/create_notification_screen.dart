@@ -17,12 +17,15 @@ class CreateNotificationScreen extends StatefulWidget {
   State<CreateNotificationScreen> createState() => _CreateNotificationScreenState();
 }
 
-class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
+class _CreateNotificationScreenState extends State<CreateNotificationScreen> with AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   final _dataKeyController = TextEditingController();
   final _dataValueController = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   final _appStorage = AppStorageService();
   final _notificationStorage = NotificationStorageService();
@@ -208,6 +211,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -312,14 +316,14 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
                             child: Text(topic.name),
                           )),
                         ],
-                        onChanged: (topic) {
+                        onChanged: _topics.isNotEmpty ? (topic) {
                           setState(() {
                             _selectedTopic = topic;
                             if (topic != null) {
                               _selectedUserIds.clear();
                             }
                           });
-                        },
+                        } : null,
                       ),
                       const SizedBox(height: 16),
                       if (_users.isNotEmpty) ...[
@@ -359,18 +363,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
                                 },
                               );
                             },
-                          ),
-                        ),
-                      ] else if (_selectedApp != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'No users added for this app. Add users in the app detail screen.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ),
                       ],

@@ -10,9 +10,12 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveClientMixin {
   final _notificationStorage = NotificationStorageService();
   List<NotificationModel> _notifications = [];
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -97,6 +100,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Column(
       children: [
         if (_notifications.isNotEmpty)
