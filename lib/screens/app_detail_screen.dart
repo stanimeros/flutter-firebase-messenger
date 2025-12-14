@@ -31,6 +31,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild when tab changes to update FAB
+    });
     _loadData();
   }
 
@@ -258,6 +261,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _tabController.index == 0 ? _showAddTopicDialog : _showAddUserDialog,
+        child: HeroIcon(_tabController.index == 0 ? HeroIcons.plus : HeroIcons.plus),
+      ),
     );
   }
 
@@ -267,12 +274,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ElevatedButton.icon(
-            onPressed: _showAddTopicDialog,
-            icon: const HeroIcon(HeroIcons.plus),
-            label: const Text('Add Topic'),
-          ),
-          const SizedBox(height: 24),
           Text(
             'Topics',
             style: Theme.of(context).textTheme.titleLarge,
@@ -326,12 +327,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ElevatedButton.icon(
-            onPressed: _showAddUserDialog,
-            icon: const HeroIcon(HeroIcons.plus),
-            label: const Text('Add User'),
-          ),
-          const SizedBox(height: 24),
           Text(
             'Users',
             style: Theme.of(context).textTheme.titleLarge,

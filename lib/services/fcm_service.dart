@@ -1,18 +1,20 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/app_model.dart';
+import 'secure_storage_service.dart';
 
 class FCMService {
+  final _secureStorage = SecureStorageService();
 
-  Future<String?> _getServerKeyFromJson(String jsonFilePath) async {
+  Future<String?> _getServerKeyFromJson(String appId) async {
     try {
-      final file = File(jsonFilePath);
-      if (!await file.exists()) {
-        throw Exception('JSON file not found');
+      // Try to get JSON from secure storage first
+      final jsonContent = await _secureStorage.getAppCredentials(appId);
+      
+      if (jsonContent == null || jsonContent.isEmpty) {
+        throw Exception('JSON credentials not found. Please update the app and select the JSON file again.');
       }
       
-      final jsonContent = await file.readAsString();
       final jsonData = jsonDecode(jsonContent) as Map<String, dynamic>;
       
       // Try to find server key in various possible fields
@@ -44,7 +46,7 @@ class FCMService {
     List<String>? tokens,
   }) async {
     try {
-      final serverKey = await _getServerKeyFromJson(app.jsonFilePath);
+      final serverKey = await _getServerKeyFromJson(app.id);
       if (serverKey == null || serverKey.isEmpty) {
         throw Exception('Server key not found in JSON file. Please ensure the JSON file contains a server_key field with your FCM server key.');
       }

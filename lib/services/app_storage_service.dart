@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_model.dart';
+import 'secure_storage_service.dart';
 
 class AppStorageService {
   static const _appsKey = 'saved_apps';
+  final _secureStorage = SecureStorageService();
 
   Future<List<AppModel>> getApps() async {
     final prefs = await SharedPreferences.getInstance();
@@ -32,6 +34,8 @@ class AppStorageService {
     apps.removeWhere((a) => a.id == appId);
     final appsJson = apps.map((a) => jsonEncode(a.toJson())).toList();
     await prefs.setStringList(_appsKey, appsJson);
+    // Also delete JSON credentials from secure storage
+    await _secureStorage.deleteAppCredentials(appId);
   }
 
   Future<AppModel?> getAppById(String appId) async {

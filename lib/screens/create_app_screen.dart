@@ -8,6 +8,7 @@ import '../models/app_model.dart';
 import '../models/user_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/user_storage_service.dart';
+import '../services/secure_storage_service.dart';
 import '../widgets/custom_app_bar.dart';
 
 class CreateAppScreen extends StatefulWidget {
@@ -25,8 +26,9 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _packageController = TextEditingController();
   final _appStorage = AppStorageService();
   final _userStorage = UserStorageService();
-  String? _selectedJsonFilePath;
+  final _secureStorage = SecureStorageService();
   String? _selectedJsonFileName;
+  String? _selectedJsonContent;
   String? _selectedLogoFilePath;
   List<UserModel> _testTokenUsers = [];
 
@@ -36,10 +38,22 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     if (widget.app != null) {
       _nameController.text = widget.app!.name;
       _packageController.text = widget.app!.packageName;
-      _selectedJsonFilePath = widget.app!.jsonFilePath;
-      _selectedJsonFileName = widget.app!.jsonFilePath.split('/').last;
       _selectedLogoFilePath = widget.app!.logoFilePath;
+      // Load existing JSON credentials from secure storage
+      _loadExistingCredentials();
       _loadTestTokenUsers();
+    }
+  }
+
+  Future<void> _loadExistingCredentials() async {
+    if (widget.app != null) {
+      final credentials = await _secureStorage.getAppCredentials(widget.app!.id);
+      if (credentials != null && credentials.isNotEmpty) {
+        setState(() {
+          _selectedJsonContent = credentials;
+          _selectedJsonFileName = 'credentials.json'; // Default name for existing credentials
+        });
+      }
     }
   }
 
@@ -126,17 +140,11 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         // Validate JSON
         try {
           final jsonContent = await file.readAsString();
-          json.decode(jsonContent);
+          json.decode(jsonContent); // Validate JSON format
           
-          // Copy file to app documents directory
-          final appDir = await getApplicationDocumentsDirectory();
-          final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-          final fileName = 'app_${timestamp}_credentials.json';
-          final savedFile = File('${appDir.path}/$fileName');
-          await savedFile.writeAsString(jsonContent);
-          
+          // Store JSON content for secure storage
           setState(() {
-            _selectedJsonFilePath = savedFile.path;
+            _selectedJsonContent = jsonContent;
             _selectedJsonFileName = result.files.single.name;
           });
         } catch (e) {
@@ -278,7 +286,15 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Future<void> _saveApp() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_selectedJsonFilePath == null || _selectedJsonFilePath!.isEmpty) {
+    // Check if we have JSON content (new file) or need to load from secure storage (existing app)
+    String? jsonContent = _selectedJsonContent;
+    
+    // If editing existing app and no new JSON selected, try to load from secure storage
+    if (jsonContent == null && widget.app != null) {
+      jsonContent = await _secureStorage.getAppCredentials(widget.app!.id);
+    }
+    
+    if ((jsonContent == null || jsonContent.isEmpty) && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please select a JSON file'),
@@ -289,6 +305,13 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     }
 
     final appId = widget.app?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+    
+    if (jsonContent == null || jsonContent.isEmpty) {
+      return;
+    }
+    
+    // Save JSON content to secure storage
+    await _secureStorage.saveAppCredentials(appId, jsonContent);
     
     // Save test token users with correct appId
     for (var user in _testTokenUsers) {
@@ -306,7 +329,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       id: appId,
       name: _nameController.text.trim(),
       packageName: _packageController.text.trim(),
-      jsonFilePath: _selectedJsonFilePath!,
+      jsonFilePath: '', // No longer used, credentials are in secure storage
       logoFilePath: _selectedLogoFilePath,
       createdAt: widget.app?.createdAt ?? DateTime.now(),
     );

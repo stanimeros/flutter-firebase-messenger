@@ -26,6 +26,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
+        leading: null,
         title: 'Firebase Messenger',
         actions: [
           IconButton(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
+import 'package:multiselect/multiselect.dart';
 import '../models/app_model.dart';
 import '../models/notification_model.dart';
 import '../models/topic_model.dart';
@@ -37,6 +38,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   List<UserModel> _users = [];
   TopicModel? _selectedTopic;
   final Set<String> _selectedUserIds = {};
+  List<String> _selectedUserNames = [];
   bool _isLoading = false;
   final Map<String, String> _customData = {};
 
@@ -65,6 +67,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       _users = users;
       _selectedTopic = null;
       _selectedUserIds.clear();
+      _selectedUserNames.clear();
     });
   }
 
@@ -161,6 +164,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           setState(() {
             _selectedTopic = null;
             _selectedUserIds.clear();
+            _selectedUserNames.clear();
             _customData.clear();
           });
         }
@@ -323,68 +327,36 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                             _selectedTopic = topic;
                             if (topic != null) {
                               _selectedUserIds.clear();
+                              _selectedUserNames.clear();
                             }
                           });
                         } : null,
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        'Select Users (Optional)',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
                       Opacity(
                         opacity: _users.isEmpty ? 0.5 : 1.0,
                         child: IgnorePointer(
                           ignoring: _users.isEmpty,
-                          child: Container(
-                            constraints: const BoxConstraints(
-                              maxHeight: 200,
-                              minHeight: 50,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: _users.isEmpty
-                                ? const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(16.0),
-                                      child: Text(
-                                        'No users available',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: _users.length,
-                                    itemBuilder: (context, index) {
-                                      final user = _users[index];
-                                      return CheckboxListTile(
-                                        title: Text(user.name),
-                                        subtitle: Text(
-                                          user.notificationToken,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        value: _selectedUserIds.contains(user.id),
-                                        onChanged: (checked) {
-                                          setState(() {
-                                            if (checked == true) {
-                                              _selectedUserIds.add(user.id);
-                                              _selectedTopic = null;
-                                            } else {
-                                              _selectedUserIds.remove(user.id);
-                                            }
-                                          });
-                                        },
-                                      );
-                                    },
-                                  ),
+                          child: DropDownMultiSelect<String>(
+                            onChanged: (List<String> selectedNames) {
+                              setState(() {
+                                _selectedUserNames = selectedNames;
+                                // Update selected user IDs based on selected names
+                                _selectedUserIds.clear();
+                                for (final name in selectedNames) {
+                                  final user = _users.firstWhere(
+                                    (u) => u.name == name,
+                                  );
+                                  _selectedUserIds.add(user.id);
+                                }
+                                if (selectedNames.isNotEmpty) {
+                                  _selectedTopic = null;
+                                }
+                              });
+                            },
+                            options: _users.map((user) => user.name).toList(),
+                            selectedValues: _selectedUserNames,
+                            whenEmpty: _users.isEmpty ? 'No users available' : 'Select Users (Optional)',
                           ),
                         ),
                       ),
