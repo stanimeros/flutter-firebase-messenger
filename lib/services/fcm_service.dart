@@ -9,49 +9,32 @@ class FCMService {
   static const _fcmScope = 'https://www.googleapis.com/auth/firebase.messaging';
 
   Future<Map<String, dynamic>> _getServiceAccountData(String appId) async {
-    // Get JSON from secure storage (same approach as create_app_screen)
-    final jsonContent = await _secureStorage.getAppCredentials(appId);
+    // Get GoogleKeyModel from secure storage
+    final serviceAccount = await _secureStorage.getAppCredentials(appId);
     
-    if (jsonContent == null || jsonContent.isEmpty) {
+    if (serviceAccount == null) {
       throw Exception('JSON credentials not found. Please update the app and select the JSON file again.');
     }
     
-    // Parse JSON the same way as create_app_screen
-    final jsonData = jsonDecode(jsonContent) as Map<String, dynamic>;
-    
-    // Extract required fields from service account JSON
-    final projectId = jsonData['project_id'] as String?;
-    final clientEmail = jsonData['client_email'] as String?;
-    final privateKey = jsonData['private_key'] as String?;
-    
-    if (projectId == null || clientEmail == null || privateKey == null) {
-      throw Exception('Invalid service account JSON. Missing required fields: project_id, client_email, or private_key.');
-    }
-    
-    return {
-      'project_id': projectId,
-      'client_email': clientEmail,
-      'private_key': privateKey,
-      'json': jsonData, // Keep full JSON for ServiceAccountCredentials.fromJson
-    };
+    return serviceAccount;
   }
 
   Future<String> _getAccessToken(String appId) async {
     try {
-      // Get JSON content from secure storage (same approach as create_app_screen)
-      final jsonContent = await _secureStorage.getAppCredentials(appId);
+      // Get Google key model from secure storage
+      final serviceAccount = await _secureStorage.getAppCredentials(appId);
       
-      if (jsonContent == null || jsonContent.isEmpty) {
+      if (serviceAccount == null) {
         throw Exception('JSON credentials not found. Please update the app and select the JSON file again.');
       }
       
-      // Parse JSON to get project_id for validation
-      final jsonData = jsonDecode(jsonContent) as Map<String, dynamic>;
-      if (jsonData['project_id'] == null || jsonData['client_email'] == null || jsonData['private_key'] == null) {
+      // Validate the model
+      if (serviceAccount.isEmpty) {
         throw Exception('Invalid service account JSON. Missing required fields: project_id, client_email, or private_key.');
       }
       
       // Create service account credentials from JSON string
+      final jsonContent = serviceAccount.toString();
       final credentials = ServiceAccountCredentials.fromJson(jsonContent);
       
       // Obtain authenticated client using clientViaServiceAccount
@@ -87,8 +70,8 @@ class FCMService {
   }) async {
     try {
       // Get service account data to extract project_id
-      final serviceAccountData = await _getServiceAccountData(app.id);
-      final projectId = serviceAccountData['project_id'] as String;
+      final serviceAccount = await _getServiceAccountData(app.id);
+      final projectId = serviceAccount['project_id'];
       
       // Get OAuth 2.0 access token
       final accessToken = await _getAccessToken(app.id);

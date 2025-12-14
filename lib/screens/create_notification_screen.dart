@@ -118,8 +118,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     try {
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        appId: _selectedApp!.id,
-        appName: _selectedApp!.name,
+        app: _selectedApp!,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
         data: _customData.isEmpty ? null : _customData,
@@ -172,8 +171,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     } catch (e) {
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        appId: _selectedApp!.id,
-        appName: _selectedApp!.name,
+        app: _selectedApp!,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
         data: _customData.isEmpty ? null : _customData,
@@ -457,8 +455,7 @@ extension NotificationModelExtension on NotificationModel {
   }) {
     return NotificationModel(
       id: id ?? this.id,
-      appId: appId ?? this.appId,
-      appName: appName ?? this.appName,
+      app: app,
       title: title ?? this.title,
       body: body ?? this.body,
       data: data ?? this.data,

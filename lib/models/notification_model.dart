@@ -1,7 +1,8 @@
+import 'package:firebase_messenger/models/app_model.dart';
+
 class NotificationModel {
   final String id;
-  final String appId;
-  final String appName;
+  final AppModel app;
   final String title;
   final String body;
   final Map<String, dynamic>? data;
@@ -13,8 +14,7 @@ class NotificationModel {
 
   NotificationModel({
     required this.id,
-    required this.appId,
-    required this.appName,
+    required this.app,
     required this.title,
     required this.body,
     this.data,
@@ -28,8 +28,7 @@ class NotificationModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'appId': appId,
-      'appName': appName,
+      'app': app.toJson(),
       'title': title,
       'body': body,
       'data': data,
@@ -44,8 +43,7 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as String,
-      appId: json['appId'] as String,
-      appName: json['appName'] as String,
+      app: AppModel.fromJson(json['app'] as Map<String, dynamic>),
       title: json['title'] as String,
       body: json['body'] as String,
       data: json['data'] as Map<String, dynamic>?,

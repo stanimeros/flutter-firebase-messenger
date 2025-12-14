@@ -26,8 +26,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _appStorage = AppStorageService();
   final _userStorage = UserStorageService();
   final _secureStorage = SecureStorageService();
-  String? _selectedJsonContent;
-  Map<String, dynamic>? _parsedJsonData;
+  Map<String, dynamic>? _serviceAccount;
   String? _selectedLogoImageData; // Base64 encoded image data
   List<UserModel> _testTokenUsers = [];
 
@@ -37,7 +36,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     if (widget.app != null) {
       _nameController.text = widget.app!.name;
       _packageController.text = widget.app!.packageName;
-      _selectedLogoImageData = widget.app!.logoImageData;
+      _selectedLogoImageData = widget.app!.imageData;
       // Load existing JSON credentials from secure storage
       _loadExistingCredentials();
       _loadTestTokenUsers();
@@ -47,20 +46,10 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Future<void> _loadExistingCredentials() async {
     if (widget.app != null) {
       final credentials = await _secureStorage.getAppCredentials(widget.app!.id);
-      if (credentials != null && credentials.isNotEmpty) {
-        try {
-          final parsedData = json.decode(credentials) as Map<String, dynamic>;
-          setState(() {
-            _selectedJsonContent = credentials;
-            _parsedJsonData = parsedData;
-          });
-        } catch (e) {
-          // If parsing fails, just store the content
-          setState(() {
-            _selectedJsonContent = credentials;
-            _parsedJsonData = null;
-          });
-        }
+      if (credentials != null) {
+        setState(() {
+          _serviceAccount = credentials;
+        });
       }
     }
   }
@@ -145,15 +134,19 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         final filePath = result.files.single.path!;
         final file = File(filePath);
         
-        // Validate JSON
+        // Validate JSON and create GoogleKeyModel
         try {
           final jsonContent = await file.readAsString();
-          final parsedData = json.decode(jsonContent) as Map<String, dynamic>; // Validate and parse JSON
+          final serviceAccount = jsonDecode(jsonContent) as Map<String, dynamic>;
           
-          // Store JSON content for secure storage
+          // Validate the model
+          if (serviceAccount.isEmpty) {
+            throw Exception('Invalid service account JSON. Missing required fields.');
+          }
+          
+          // Store GoogleKeyModel
           setState(() {
-            _selectedJsonContent = jsonContent;
-            _parsedJsonData = parsedData;
+            _serviceAccount = serviceAccount;
           });
         } catch (e) {
           if (mounted) {
@@ -287,15 +280,15 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Future<void> _saveApp() async {
     if (!_formKey.currentState!.validate()) return;
     
-    // Check if we have JSON content (new file) or need to load from secure storage (existing app)
-    String? jsonContent = _selectedJsonContent;
+    // Check if we have GoogleKeyModel (new file) or need to load from secure storage (existing app)
+    Map<String, dynamic>? serviceAccount = _serviceAccount;
     
     // If editing existing app and no new JSON selected, try to load from secure storage
-    if (jsonContent == null && widget.app != null) {
-      jsonContent = await _secureStorage.getAppCredentials(widget.app!.id);
+    if (serviceAccount == null && widget.app != null) {
+      serviceAccount = await _secureStorage.getAppCredentials(widget.app!.id);
     }
     
-    if ((jsonContent == null || jsonContent.isEmpty) && mounted) {
+    if (serviceAccount == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please select a JSON file'),
@@ -307,12 +300,12 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
 
     final appId = widget.app?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
     
-    if (jsonContent == null || jsonContent.isEmpty) {
+    if (serviceAccount == null) {
       return;
     }
     
-    // Save JSON content to secure storage
-    await _secureStorage.saveAppCredentials(appId, jsonContent);
+    // Save JSON content to secure storage using the model
+    await _secureStorage.saveAppCredentials(appId, serviceAccount.toString());
     
     // Save test token users with correct appId
     for (var user in _testTokenUsers) {
@@ -330,7 +323,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       id: appId,
       name: _nameController.text.trim(),
       packageName: _packageController.text.trim(),
-      logoImageData: _selectedLogoImageData,
+      imageData: _selectedLogoImageData,
       createdAt: widget.app?.createdAt ?? DateTime.now(),
     );
 
@@ -434,17 +427,17 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      if (_selectedJsonContent == null || _selectedJsonContent!.isEmpty)
+                      if (_serviceAccount == null)
                         OutlinedButton.icon(
                           onPressed: _pickJsonFile,
                           icon: const HeroIcon(HeroIcons.folderOpen),
                           label: const Text('Select JSON File'),
                         ),
-                      if (_parsedJsonData != null) ...[
+                      if (_serviceAccount != null) ...[
                         const SizedBox(height: 16),
                         _buildJsonFieldsExpansion(),
                       ],
-                      if (_selectedJsonContent == null || _selectedJsonContent!.isEmpty) ...[
+                      if (_serviceAccount == null) ...[
                         const SizedBox(height: 8),
                         const Text(
                           'Select your Firebase service account JSON file. This file is required.',
@@ -522,12 +515,8 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   }
 
   Widget _buildJsonFieldsExpansion() {
-    if (_parsedJsonData == null) return const SizedBox.shrink();
-    
-    final projectId = _parsedJsonData!['project_id']?.toString() ?? 'N/A';
-    final otherFields = Map<String, dynamic>.from(_parsedJsonData!);
-    otherFields.remove('project_id'); // Remove project_id as it's the title
-    
+    if (_serviceAccount == null) return const SizedBox.shrink();
+
     return Card(
       child: ExpansionTile(
         title: Row(
@@ -539,7 +528,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Project ID: $projectId',
+              'Project ID: ${_serviceAccount!['project_id']}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -552,32 +541,38 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ...otherFields.entries.map((entry) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: TextFormField(
-                      initialValue: _formatJsonValue(entry.value),
-                      enabled: false,
-                      decoration: InputDecoration(
-                        labelText: entry.key,
-                        border: const OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                if (_serviceAccount!.isNotEmpty) ...[
+                  ..._serviceAccount!.entries
+                      .where((entry) => 
+                          entry.key != 'project_id' && 
+                          entry.key != 'client_email' && 
+                          entry.key != 'private_key')
+                      .map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: TextFormField(
+                        initialValue: _formatJsonValue(entry.value),
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: entry.key,
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        ),
+                        maxLines: entry.value is String && entry.value.length > 100 ? 3 : 1,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
-                      maxLines: entry.key == 'private_key' ? 5 : 1,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ],
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () {
                     setState(() {
-                      _selectedJsonContent = null;
-                      _parsedJsonData = null;
+                      _serviceAccount = null;
                     });
                   },
                   icon: const HeroIcon(HeroIcons.trash),

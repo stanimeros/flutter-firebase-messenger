@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/notification_model.dart';
+import '../models/app_model.dart';
 import '../services/notification_storage_service.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -30,7 +32,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
     });
   }
 
-  Future<void> _deleteNotification(NotificationModel notification) async {
+  Future<bool> _deleteNotification(NotificationModel notification) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -61,7 +63,9 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
           const SnackBar(content: Text('Notification deleted')),
         );
       }
+      return true;
     }
+    return false;
   }
 
   Future<void> _clearHistory() async {
@@ -156,75 +160,67 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                     itemCount: _notifications.length,
                     itemBuilder: (context, index) {
                       final notification = _notifications[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ExpansionTile(
-                          leading: CircleAvatar(
-                            backgroundColor: notification.sent
-                                ? Colors.green
-                                : Colors.red,
-                            child: HeroIcon(
-                              notification.sent
-                                  ? HeroIcons.checkCircle
-                                  : HeroIcons.xCircle,
-                              style: HeroIconStyle.solid,
-                              color: Colors.white,
-                            ),
+                      return Dismissible(
+                        key: Key(notification.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          title: Row(
+                          child: const HeroIcon(
+                            HeroIcons.trash,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                        confirmDismiss: (direction) async {
+                          return await _deleteNotification(notification);
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ExpansionTile(
+                            leading: _buildAppImage(notification.app),
+                            title: Text(notification.title),
+                            subtitle: Text(
+                              notification.createdAt.toLocal().toString().split('.')[0],
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            trailing: _buildStatusIcon(notification.sent),
                             children: [
-                              Expanded(child: Text(notification.title)),
-                              const SizedBox(width: 8),
-                              Chip(
-                                label: Text(notification.sent ? 'Sent' : 'Failed'),
-                                backgroundColor: notification.sent 
-                                    ? Colors.green.withValues(alpha: 0.2)
-                                    : Colors.red.withValues(alpha: 0.2),
-                                labelStyle: TextStyle(
-                                  color: notification.sent ? Colors.green : Colors.red,
-                                  fontSize: 12,
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildInfoRow('App', notification.app.name),
+                                    _buildInfoRow('Body', notification.body),
+                                    if (notification.topic != null)
+                                      _buildInfoRow('Topic', notification.topic!),
+                                    if (notification.tokens != null &&
+                                        notification.tokens!.isNotEmpty)
+                                      _buildInfoRow(
+                                          'Tokens',
+                                          '${notification.tokens!.length} token(s)'),
+                                    if (notification.data != null &&
+                                        notification.data!.isNotEmpty)
+                                      ...notification.data!.entries.map((entry) =>
+                                          _buildInfoRow(
+                                              'Data: ${entry.key}', entry.value.toString())),
+                                    _buildInfoRow(
+                                        'Status',
+                                        notification.sent ? 'Sent' : 'Failed'),
+                                    if (notification.error != null)
+                                      _buildInfoRow(
+                                          'Error', notification.error!,
+                                          isError: true),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          subtitle: Text(
-                            notification.createdAt.toLocal().toString(),
-                          ),
-                          trailing: IconButton(
-                            icon: const HeroIcon(HeroIcons.trash),
-                            onPressed: () => _deleteNotification(notification),
-                          ),
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildInfoRow('App', notification.appName),
-                                  _buildInfoRow('Body', notification.body),
-                                  if (notification.topic != null)
-                                    _buildInfoRow('Topic', notification.topic!),
-                                  if (notification.tokens != null &&
-                                      notification.tokens!.isNotEmpty)
-                                    _buildInfoRow(
-                                        'Tokens',
-                                        '${notification.tokens!.length} token(s)'),
-                                  if (notification.data != null &&
-                                      notification.data!.isNotEmpty)
-                                    ...notification.data!.entries.map((entry) =>
-                                        _buildInfoRow(
-                                            'Data: ${entry.key}', entry.value.toString())),
-                                  _buildInfoRow(
-                                      'Status',
-                                      notification.sent ? 'Sent' : 'Failed'),
-                                  if (notification.error != null)
-                                    _buildInfoRow(
-                                        'Error', notification.error!,
-                                        isError: true),
-                                ],
-                              ),
-                            ),
-                          ],
                         ),
                       );
                     },
@@ -258,6 +254,68 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAppImage(AppModel app) {
+    if (app.imageData != null && app.imageData!.isNotEmpty) {
+      try {
+        final imageBytes = base64Decode(app.imageData!);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.memory(
+            imageBytes,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultAvatar(app);
+            },
+          ),
+        );
+      } catch (e) {
+        return _buildDefaultAvatar(app);
+      }
+    }
+    return _buildDefaultAvatar(app);
+  }
+
+  Widget _buildDefaultAvatar(AppModel app) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          app.name.isNotEmpty ? app.name[0].toUpperCase() : 'A',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusIcon(bool sent) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: sent
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.red.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: HeroIcon(
+        sent ? HeroIcons.checkCircle : HeroIcons.xCircle,
+        style: HeroIconStyle.solid,
+        color: sent ? Colors.green : Colors.red,
+        size: 24,
       ),
     );
   }

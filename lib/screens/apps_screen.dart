@@ -111,7 +111,7 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: _buildAppLogo(app.logoImageData),
+                    leading: _buildAppLogo(app.imageData),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
                     trailing: IconButton(

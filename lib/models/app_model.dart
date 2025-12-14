@@ -2,14 +2,14 @@ class AppModel {
   final String id;
   final String name;
   final String packageName;
-  final String? logoImageData; // Base64 encoded image data
+  final String? imageData; // Base64 encoded image data
   final DateTime createdAt;
 
   AppModel({
     required this.id,
     required this.name,
     required this.packageName,
-    this.logoImageData,
+    this.imageData,
     required this.createdAt,
   });
 
@@ -18,7 +18,7 @@ class AppModel {
       'id': id,
       'name': name,
       'packageName': packageName,
-      'logoImageData': logoImageData,
+      'imageData': imageData,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -28,7 +28,7 @@ class AppModel {
       id: json['id'] as String,
       name: json['name'] as String,
       packageName: json['packageName'] as String,
-      logoImageData: json['logoImageData'] as String?,
+      imageData: json['imageData'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
