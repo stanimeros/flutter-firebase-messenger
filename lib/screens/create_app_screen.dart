@@ -28,7 +28,6 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   String? _selectedJsonFilePath;
   String? _selectedJsonFileName;
   String? _selectedLogoFilePath;
-  String? _selectedLogoFileName;
   List<UserModel> _testTokenUsers = [];
 
   @override
@@ -40,9 +39,6 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       _selectedJsonFilePath = widget.app!.jsonFilePath;
       _selectedJsonFileName = widget.app!.jsonFilePath.split('/').last;
       _selectedLogoFilePath = widget.app!.logoFilePath;
-      if (_selectedLogoFilePath != null) {
-        _selectedLogoFileName = _selectedLogoFilePath!.split('/').last;
-      }
       _loadTestTokenUsers();
     }
   }
@@ -187,7 +183,6 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         
         setState(() {
           _selectedLogoFilePath = savedFile.path;
-          _selectedLogoFileName = result.files.single.name;
         });
       }
     } catch (e) {
@@ -282,49 +277,57 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                       const SizedBox(height: 16),
                       // Logo picker
                       Center(
-                        child: Column(
-                          children: [
-                            if (_selectedLogoFilePath != null)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(_selectedLogoFilePath!),
+                        child: GestureDetector(
+                          onTap: _pickLogoFile,
+                          child: Stack(
+                            children: [
+                              if (_selectedLogoFilePath != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    File(_selectedLogoFilePath!),
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              else
+                                Container(
                                   width: 100,
                                   height: 100,
-                                  fit: BoxFit.cover,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey,
+                                      width: 2,
+                                      style: BorderStyle.solid,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.image,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              )
-                            else
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.image,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: _pickLogoFile,
-                              icon: const HeroIcon(HeroIcons.photo),
-                              label: Text(_selectedLogoFileName ?? 'Pick Logo'),
-                            ),
-                            if (_selectedLogoFileName != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                _selectedLogoFileName!,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontSize: 12,
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(6),
+                                  child: const HeroIcon(
+                                    HeroIcons.camera,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ],
-                          ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

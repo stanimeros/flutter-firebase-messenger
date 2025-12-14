@@ -62,6 +62,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
           ),
           Expanded(
             child: TabBarView(
+              physics: const NeverScrollableScrollPhysics(),
               controller: _tabController,
               children: [
                 _buildAppGuide(),
