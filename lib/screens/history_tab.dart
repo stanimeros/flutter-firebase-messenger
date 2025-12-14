@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:intl/intl.dart';
 import '../models/notification_model.dart';
 import '../services/notification_storage_service.dart';
 
@@ -31,16 +31,20 @@ class _HistoryTabState extends State<HistoryTab> {
   Future<void> _deleteNotification(NotificationModel notification) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => ShadDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Delete Notification'),
-        description: const Text('Are you sure you want to delete this notification?'),
+        content: const Text('Are you sure you want to delete this notification?'),
         actions: [
-          ShadButton.outline(
+          OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ShadButton.destructive(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -51,10 +55,8 @@ class _HistoryTabState extends State<HistoryTab> {
       await _notificationStorage.deleteNotification(notification.id);
       _loadNotifications();
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(
-            description: Text('Notification deleted'),
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Notification deleted')),
         );
       }
     }
@@ -63,16 +65,20 @@ class _HistoryTabState extends State<HistoryTab> {
   Future<void> _clearHistory() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => ShadDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Clear History'),
-        description: const Text('Are you sure you want to clear all notification history?'),
+        content: const Text('Are you sure you want to clear all notification history?'),
         actions: [
-          ShadButton.outline(
+          OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ShadButton.destructive(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Clear'),
           ),
         ],
@@ -83,10 +89,8 @@ class _HistoryTabState extends State<HistoryTab> {
       await _notificationStorage.clearHistory();
       _loadNotifications();
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(
-            description: Text('History cleared'),
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('History cleared')),
         );
       }
     }
@@ -106,7 +110,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   'Notification History',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                ShadButton.outline(
+                OutlinedButton(
                   onPressed: _clearHistory,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -149,8 +153,8 @@ class _HistoryTabState extends State<HistoryTab> {
                     itemCount: _notifications.length,
                     itemBuilder: (context, index) {
                       final notification = _notifications[index];
-                      return ShadCard(
-                        padding: const EdgeInsets.only(bottom: 8),
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
                         child: ExpansionTile(
                           leading: CircleAvatar(
                             backgroundColor: notification.sent
@@ -168,14 +172,23 @@ class _HistoryTabState extends State<HistoryTab> {
                             children: [
                               Expanded(child: Text(notification.title)),
                               const SizedBox(width: 8),
-                              notification.sent ? ShadBadge(child: Text('Sent')) : ShadBadge.destructive(child: Text('Failed')),
+                              Chip(
+                                label: Text(notification.sent ? 'Sent' : 'Failed'),
+                                backgroundColor: notification.sent 
+                                    ? Colors.green.withValues(alpha: 0.2)
+                                    : Colors.red.withValues(alpha: 0.2),
+                                labelStyle: TextStyle(
+                                  color: notification.sent ? Colors.green : Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                           subtitle: Text(
                             DateFormat('MMM dd, yyyy HH:mm')
                                 .format(notification.createdAt),
                           ),
-                          trailing: ShadIconButton(
+                          trailing: IconButton(
                             icon: const HeroIcon(HeroIcons.trash),
                             onPressed: () => _deleteNotification(notification),
                           ),

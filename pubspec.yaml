@@ -11,11 +11,11 @@ dependencies:
     sdk: flutter
   flutter_secure_storage: ^10.0.0
   heroicons: ^0.11.0
-  shadcn_ui: ^0.42.0
   file_picker: ^10.3.7
   path_provider: ^2.1.5
   http: ^1.6.0
   shared_preferences: ^2.5.4
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
 import '../models/app_model.dart';
 import '../services/app_storage_service.dart';
 
@@ -52,10 +51,8 @@ class _AddAppTabState extends State<AddAppTab> {
     _loadApps();
 
     if (mounted) {
-      ShadToaster.of(context).show(
-        const ShadToast(
-          description: Text('App saved successfully'),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('App saved successfully')),
       );
     }
   }
@@ -63,16 +60,20 @@ class _AddAppTabState extends State<AddAppTab> {
   Future<void> _deleteApp(AppModel app) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => ShadDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Delete App'),
-        description: Text('Are you sure you want to delete ${app.name}?'),
+        content: Text('Are you sure you want to delete ${app.name}?'),
         actions: [
-          ShadButton.outline(
+          OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ShadButton.destructive(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -83,10 +84,8 @@ class _AddAppTabState extends State<AddAppTab> {
       await _appStorage.deleteApp(app.id);
       _loadApps();
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(
-            description: Text('App deleted'),
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('App deleted')),
         );
       }
     }
@@ -107,7 +106,7 @@ class _AddAppTabState extends State<AddAppTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ShadCard(
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -120,38 +119,48 @@ class _AddAppTabState extends State<AddAppTab> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    ShadInputFormField(
+                    TextFormField(
                       controller: _nameController,
-                      placeholder: const Text('My Awesome App'),
-                      label: const Text('App Name'),
+                      decoration: const InputDecoration(
+                        labelText: 'App Name',
+                        hintText: 'My Awesome App',
+                        border: OutlineInputBorder(),
+                      ),
                       validator: (value) {
-                        if (value.isEmpty) {
+                        if (value == null || value.isEmpty) {
                           return 'Please enter app name';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    ShadInputFormField(
+                    TextFormField(
                       controller: _packageController,
-                      placeholder: const Text('com.example.app'),
-                      label: const Text('Package Name'),
+                      decoration: const InputDecoration(
+                        labelText: 'Package Name',
+                        hintText: 'com.example.app',
+                        border: OutlineInputBorder(),
+                      ),
                       validator: (value) {
-                        if (value.isEmpty) {
+                        if (value == null || value.isEmpty) {
                           return 'Please enter package name';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    ShadTextareaFormField(
+                    TextFormField(
                       controller: _serverKeyController,
-                      placeholder: const Text('AAA...'),
-                      label: const Text('Server Key (Optional)'),
-                      description: const Text('FCM Server Key from Firebase Console'),
+                      decoration: const InputDecoration(
+                        labelText: 'Server Key (Optional)',
+                        hintText: 'AAA...',
+                        helperText: 'FCM Server Key from Firebase Console',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    ShadButton(
+                    ElevatedButton(
                       onPressed: _saveApp,
                       child: const Text('Save App'),
                     ),
@@ -167,7 +176,7 @@ class _AddAppTabState extends State<AddAppTab> {
           ),
           const SizedBox(height: 16),
           if (_apps.isEmpty)
-            ShadCard(
+            Card(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
@@ -190,15 +199,15 @@ class _AddAppTabState extends State<AddAppTab> {
               ),
             )
           else
-            ..._apps.map((app) => ShadCard(
-                  padding: const EdgeInsets.only(bottom: 8),
+            ..._apps.map((app) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: const CircleAvatar(
                       child: HeroIcon(HeroIcons.devicePhoneMobile),
                     ),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
-                    trailing: ShadIconButton(
+                    trailing: IconButton(
                       icon: const HeroIcon(HeroIcons.trash),
                       onPressed: () => _deleteApp(app),
                     ),

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
 import '../services/secure_storage_service.dart';
 
 class SettingsTab extends StatefulWidget {
@@ -65,17 +64,16 @@ class _SettingsTabState extends State<SettingsTab> {
           await _checkCredentials();
 
           if (mounted) {
-            ShadToaster.of(context).show(
-              const ShadToast(
-                description: Text('Credentials saved successfully'),
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Credentials saved successfully')),
             );
           }
         } catch (e) {
           if (mounted) {
-            ShadToaster.of(context).show(
-              ShadToast.destructive(
-                description: Text('Invalid JSON file: $e'),
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Invalid JSON file: $e'),
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
@@ -83,9 +81,10 @@ class _SettingsTabState extends State<SettingsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(
-          ShadToast.destructive(
-            description: Text('Error loading file: $e'),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading file: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -95,17 +94,21 @@ class _SettingsTabState extends State<SettingsTab> {
   Future<void> _deleteCredentials() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => ShadDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Delete Credentials'),
-        description: const Text(
+        content: const Text(
             'Are you sure you want to delete saved Firebase credentials?'),
         actions: [
-          ShadButton.outline(
+          OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ShadButton.destructive(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -117,10 +120,8 @@ class _SettingsTabState extends State<SettingsTab> {
       await _checkCredentials();
 
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(
-            description: Text('Credentials deleted'),
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Credentials deleted')),
         );
       }
     }
@@ -133,7 +134,7 @@ class _SettingsTabState extends State<SettingsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ShadCard(
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -151,51 +152,69 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   const SizedBox(height: 16),
                   if (_hasCredentials)
-                    ShadAlert(
-                      title: Row(
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
                         children: [
-                          const HeroIcon(
-                            HeroIcons.checkCircle,
+                          Icon(
+                            Icons.check_circle,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Credentials loaded',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                                 if (_credentialsInfo != null)
                                   Text(
                                     _credentialsInfo!,
-                                    style: const TextStyle(fontSize: 12),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
                                   ),
                               ],
                             ),
                           ),
-                          ShadIconButton(
+                          IconButton(
                             icon: const HeroIcon(HeroIcons.trash),
                             onPressed: _deleteCredentials,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
                         ],
                       ),
                     )
                   else
-                    ShadAlert.destructive(
-                      title: const Row(
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
                         children: [
-                          HeroIcon(
-                            HeroIcons.exclamationTriangle,
+                          Icon(
+                            Icons.warning,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'No credentials loaded',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onErrorContainer,
                               ),
                             ),
                           ),
@@ -203,7 +222,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       ),
                     ),
                   const SizedBox(height: 16),
-                  ShadButton(
+                  ElevatedButton(
                     onPressed: _pickAndSaveJson,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +244,7 @@ class _SettingsTabState extends State<SettingsTab> {
             ),
           ),
           const SizedBox(height: 24),
-          ShadCard(
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
