@@ -262,7 +262,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Firebase Cloud Messenger',
+                    'Firebase Messenger',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),

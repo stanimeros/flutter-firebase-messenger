@@ -1,4 +1,4 @@
-name: flutter_fcm
+name: firebase_messenger
 description: "A new Flutter project."
 publish_to: 'none'
 version: 0.1.0
@@ -23,4 +23,19 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
+  generate: true
   uses-material-design: true
+  assets:
+    - assets/logo_512.png
+
+flutter_intl:
+  enabled: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: assets/logo_1500.png
+  adaptive_icon_background: assets/logo_1500.png
+  adaptive_icon_foreground: assets/logo_1500.png
+  min_sdk_android: 28

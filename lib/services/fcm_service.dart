@@ -1,8 +1,38 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/app_model.dart';
 
 class FCMService {
+
+  Future<String?> _getServerKeyFromJson(String jsonFilePath) async {
+    try {
+      final file = File(jsonFilePath);
+      if (!await file.exists()) {
+        throw Exception('JSON file not found');
+      }
+      
+      final jsonContent = await file.readAsString();
+      final jsonData = jsonDecode(jsonContent) as Map<String, dynamic>;
+      
+      // Try to find server key in various possible fields
+      if (jsonData.containsKey('server_key')) {
+        return jsonData['server_key'] as String?;
+      }
+      if (jsonData.containsKey('serverKey')) {
+        return jsonData['serverKey'] as String?;
+      }
+      if (jsonData.containsKey('fcm_server_key')) {
+        return jsonData['fcm_server_key'] as String?;
+      }
+      
+      // If no server key found, we'll need to use OAuth2 with service account
+      // For now, return null and throw an error
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<bool> sendNotification({
     required AppModel app,
@@ -14,9 +44,9 @@ class FCMService {
     List<String>? tokens,
   }) async {
     try {
-      final serverKey = app.serverKey;
+      final serverKey = await _getServerKeyFromJson(app.jsonFilePath);
       if (serverKey == null || serverKey.isEmpty) {
-        throw Exception('Server key not configured for this app');
+        throw Exception('Server key not found in JSON file. Please ensure the JSON file contains a server_key field with your FCM server key.');
       }
 
       final url = Uri.parse('https://fcm.googleapis.com/fcm/send');

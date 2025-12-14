@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
 import '../services/app_storage_service.dart';
+import 'app_detail_screen.dart';
+import 'create_app_screen.dart';
 
 class AddAppTab extends StatefulWidget {
   const AddAppTab({super.key});
@@ -11,10 +14,6 @@ class AddAppTab extends StatefulWidget {
 }
 
 class _AddAppTabState extends State<AddAppTab> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _packageController = TextEditingController();
-  final _serverKeyController = TextEditingController();
   final _appStorage = AppStorageService();
   List<AppModel> _apps = [];
 
@@ -24,37 +23,18 @@ class _AddAppTabState extends State<AddAppTab> {
     _loadApps();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload apps when returning to this screen
+    _loadApps();
+  }
+
   Future<void> _loadApps() async {
     final apps = await _appStorage.getApps();
     setState(() {
       _apps = apps;
     });
-  }
-
-  Future<void> _saveApp() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final app = AppModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text.trim(),
-      packageName: _packageController.text.trim(),
-      serverKey: _serverKeyController.text.trim().isEmpty 
-          ? null 
-          : _serverKeyController.text.trim(),
-      createdAt: DateTime.now(),
-    );
-
-    await _appStorage.saveApp(app);
-    _nameController.clear();
-    _packageController.clear();
-    _serverKeyController.clear();
-    _loadApps();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('App saved successfully')),
-      );
-    }
   }
 
   Future<void> _deleteApp(AppModel app) async {
@@ -92,128 +72,110 @@ class _AddAppTabState extends State<AddAppTab> {
   }
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    _packageController.dispose();
-    _serverKeyController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Add Mobile App',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'App Name',
-                        hintText: 'My Awesome App',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter app name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _packageController,
-                      decoration: const InputDecoration(
-                        labelText: 'Package Name',
-                        hintText: 'com.example.app',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter package name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _serverKeyController,
-                      decoration: const InputDecoration(
-                        labelText: 'Server Key (Optional)',
-                        hintText: 'AAA...',
-                        helperText: 'FCM Server Key from Firebase Console',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _saveApp,
-                      child: const Text('Save App'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Saved Apps',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          if (_apps.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    HeroIcon(
-                      HeroIcons.inbox,
-                      size: 48,
-                      style: HeroIconStyle.outline,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No apps added yet',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey,
-                          ),
-                    ),
-                  ],
-                ),
+    return Scaffold(
+      body: _apps.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  HeroIcon(
+                    HeroIcons.inbox,
+                    size: 64,
+                    style: HeroIconStyle.outline,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No apps added yet',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap the + button to create your first app',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                ],
               ),
             )
-          else
-            ..._apps.map((app) => Card(
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _apps.length,
+              itemBuilder: (context, index) {
+                final app = _apps[index];
+                return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      child: HeroIcon(HeroIcons.devicePhoneMobile),
-                    ),
+                    leading: app.logoFilePath != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.file(
+                              File(app.logoFilePath!),
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const CircleAvatar(
+                                  child: HeroIcon(HeroIcons.devicePhoneMobile),
+                                );
+                              },
+                            ),
+                          )
+                        : const CircleAvatar(
+                            child: HeroIcon(HeroIcons.devicePhoneMobile),
+                          ),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
-                    trailing: IconButton(
-                      icon: const HeroIcon(HeroIcons.trash),
-                      onPressed: () => _deleteApp(app),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const HeroIcon(HeroIcons.arrowRight),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AppDetailScreen(app: app),
+                              ),
+                            ).then((_) => _loadApps());
+                          },
+                        ),
+                        IconButton(
+                          icon: const HeroIcon(HeroIcons.trash),
+                          onPressed: () => _deleteApp(app),
+                        ),
+                      ],
                     ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AppDetailScreen(app: app),
+                        ),
+                      ).then((_) => _loadApps());
+                    },
                   ),
-                )),
-        ],
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CreateAppScreen(),
+            ),
+          );
+          if (result == true) {
+            _loadApps();
+          }
+        },
+        icon: const HeroIcon(HeroIcons.plus),
+        label: const Text('Create App'),
       ),
     );
   }

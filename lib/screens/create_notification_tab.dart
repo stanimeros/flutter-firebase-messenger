@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
 import '../models/notification_model.dart';
+import '../models/topic_model.dart';
+import '../models/user_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
+import '../services/topic_storage_service.dart';
+import '../services/user_storage_service.dart';
 import '../services/fcm_service.dart';
 
 class CreateNotificationTab extends StatefulWidget {
@@ -18,17 +22,21 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   final _imageUrlController = TextEditingController();
-  final _topicController = TextEditingController();
-  final _tokensController = TextEditingController();
   final _dataKeyController = TextEditingController();
   final _dataValueController = TextEditingController();
 
   final _appStorage = AppStorageService();
   final _notificationStorage = NotificationStorageService();
+  final _topicStorage = TopicStorageService();
+  final _userStorage = UserStorageService();
   final _fcmService = FCMService();
 
   List<AppModel> _apps = [];
   AppModel? _selectedApp;
+  List<TopicModel> _topics = [];
+  List<UserModel> _users = [];
+  TopicModel? _selectedTopic;
+  final Set<String> _selectedUserIds = {};
   bool _isLoading = false;
   final Map<String, String> _customData = {};
 
@@ -44,7 +52,19 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
       _apps = apps;
       if (apps.isNotEmpty && _selectedApp == null) {
         _selectedApp = apps.first;
+        _loadAppData(apps.first);
       }
+    });
+  }
+
+  Future<void> _loadAppData(AppModel app) async {
+    final topics = await _topicStorage.getTopics(app.id);
+    final users = await _userStorage.getUsers(app.id);
+    setState(() {
+      _topics = topics;
+      _users = users;
+      _selectedTopic = null;
+      _selectedUserIds.clear();
     });
   }
 
@@ -75,10 +95,9 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
       return;
     }
 
-    if (_topicController.text.trim().isEmpty && 
-        _tokensController.text.trim().isEmpty) {
+    if (_selectedTopic == null && _selectedUserIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide either topic or tokens')),
+        const SnackBar(content: Text('Please select either a topic or at least one user')),
       );
       return;
     }
@@ -98,15 +117,12 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
             ? null 
             : _imageUrlController.text.trim(),
         data: _customData.isEmpty ? null : _customData,
-        topic: _topicController.text.trim().isEmpty 
-            ? null 
-            : _topicController.text.trim(),
-        tokens: _tokensController.text.trim().isEmpty
+        topic: _selectedTopic?.name,
+        tokens: _selectedUserIds.isEmpty
             ? null
-            : _tokensController.text
-                .split(',')
-                .map((t) => t.trim())
-                .where((t) => t.isNotEmpty)
+            : _users
+                .where((u) => _selectedUserIds.contains(u.id))
+                .map((u) => u.notificationToken)
                 .toList(),
         createdAt: DateTime.now(),
       );
@@ -140,9 +156,11 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
           _titleController.clear();
           _bodyController.clear();
           _imageUrlController.clear();
-          _topicController.clear();
-          _tokensController.clear();
-          _customData.clear();
+          setState(() {
+            _selectedTopic = null;
+            _selectedUserIds.clear();
+            _customData.clear();
+          });
         }
       }
     } catch (e) {
@@ -156,15 +174,12 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
             ? null 
             : _imageUrlController.text.trim(),
         data: _customData.isEmpty ? null : _customData,
-        topic: _topicController.text.trim().isEmpty 
-            ? null 
-            : _topicController.text.trim(),
-        tokens: _tokensController.text.trim().isEmpty
+        topic: _selectedTopic?.name,
+        tokens: _selectedUserIds.isEmpty
             ? null
-            : _tokensController.text
-                .split(',')
-                .map((t) => t.trim())
-                .where((t) => t.isNotEmpty)
+            : _users
+                .where((u) => _selectedUserIds.contains(u.id))
+                .map((u) => u.notificationToken)
                 .toList(),
         createdAt: DateTime.now(),
         sent: false,
@@ -195,8 +210,6 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
     _titleController.dispose();
     _bodyController.dispose();
     _imageUrlController.dispose();
-    _topicController.dispose();
-    _tokensController.dispose();
     _dataKeyController.dispose();
     _dataValueController.dispose();
     super.dispose();
@@ -248,14 +261,18 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                           child: Text(app.name),
                         )).toList(),
                         onChanged: (app) {
-                          setState(() {
-                            _selectedApp = app;
-                          });
+                          if (app != null) {
+                            _loadAppData(app);
+                            setState(() {
+                              _selectedApp = app;
+                            });
+                          }
                         },
                       ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
+                      enabled: _selectedApp != null,
                       decoration: const InputDecoration(
                         labelText: 'Title',
                         hintText: 'Notification title',
@@ -271,6 +288,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _bodyController,
+                      enabled: _selectedApp != null,
                       decoration: const InputDecoration(
                         labelText: 'Body',
                         hintText: 'Notification body text',
@@ -287,33 +305,95 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _imageUrlController,
+                      enabled: _selectedApp != null,
                       decoration: const InputDecoration(
                         labelText: 'Image URL (Optional)',
                         hintText: 'https://example.com/image.jpg',
                         border: OutlineInputBorder(),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _topicController,
-                      decoration: const InputDecoration(
-                        labelText: 'Topic (Optional)',
-                        hintText: 'news',
-                        helperText: 'Send to a topic or provide tokens below',
-                        border: OutlineInputBorder(),
+                    if (_selectedApp != null) ...[
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<TopicModel?>(
+                        initialValue: _selectedTopic,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Topic (Optional)',
+                          border: OutlineInputBorder(),
+                          helperText: 'Select a topic or select users below',
+                        ),
+                        items: [
+                          const DropdownMenuItem<TopicModel?>(
+                            value: null,
+                            child: Text('None'),
+                          ),
+                          ..._topics.map((topic) => DropdownMenuItem<TopicModel?>(
+                            value: topic,
+                            child: Text(topic.name),
+                          )),
+                        ],
+                        onChanged: (topic) {
+                          setState(() {
+                            _selectedTopic = topic;
+                            if (topic != null) {
+                              _selectedUserIds.clear();
+                            }
+                          });
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _tokensController,
-                      decoration: const InputDecoration(
-                        labelText: 'Device Tokens (Optional)',
-                        hintText: 'token1, token2, token3',
-                        helperText: 'Comma-separated FCM device tokens',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                    ),
+                      const SizedBox(height: 16),
+                      if (_users.isNotEmpty) ...[
+                        Text(
+                          'Select Users (Optional)',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _users.length,
+                            itemBuilder: (context, index) {
+                              final user = _users[index];
+                              return CheckboxListTile(
+                                title: Text(user.name),
+                                subtitle: Text(
+                                  user.notificationToken,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                value: _selectedUserIds.contains(user.id),
+                                onChanged: (checked) {
+                                  setState(() {
+                                    if (checked == true) {
+                                      _selectedUserIds.add(user.id);
+                                      _selectedTopic = null;
+                                    } else {
+                                      _selectedUserIds.remove(user.id);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ] else if (_selectedApp != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'No users added for this app. Add users in the app detail screen.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),
@@ -335,6 +415,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                         Expanded(
                           child: TextFormField(
                             controller: _dataKeyController,
+                            enabled: _selectedApp != null,
                             decoration: const InputDecoration(
                               labelText: 'Key',
                               hintText: 'Key',
@@ -346,6 +427,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                         Expanded(
                           child: TextFormField(
                             controller: _dataValueController,
+                            enabled: _selectedApp != null,
                             decoration: const InputDecoration(
                               labelText: 'Value',
                               hintText: 'Value',
@@ -355,7 +437,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed: _addCustomData,
+                          onPressed: _selectedApp != null ? _addCustomData : null,
                           child: const Text('Add'),
                         ),
                       ],
@@ -380,7 +462,7 @@ class _CreateNotificationTabState extends State<CreateNotificationTab> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _isLoading ? null : _sendNotification,
+              onPressed: (_selectedApp != null && !_isLoading) ? _sendNotification : null,
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
