@@ -112,7 +112,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
         appName: _selectedApp!.name,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
-        imageUrl: null,
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
         tokens: _selectedUserIds.isEmpty
@@ -166,7 +165,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> {
         appName: _selectedApp!.name,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
-        imageUrl: null,
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
         tokens: _selectedUserIds.isEmpty
@@ -482,7 +480,6 @@ extension NotificationModelExtension on NotificationModel {
       appName: appName ?? this.appName,
       title: title ?? this.title,
       body: body ?? this.body,
-      imageUrl: imageUrl ?? this.imageUrl,
       data: data ?? this.data,
       topic: topic ?? this.topic,
       tokens: tokens ?? this.tokens,

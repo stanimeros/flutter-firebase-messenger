@@ -5,7 +5,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
+import '../models/user_model.dart';
 import '../services/app_storage_service.dart';
+import '../services/user_storage_service.dart';
 
 class CreateAppScreen extends StatefulWidget {
   final AppModel? app;
@@ -20,12 +22,14 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _packageController = TextEditingController();
-  final _testTokensController = TextEditingController();
+  final _tokenInputController = TextEditingController();
   final _appStorage = AppStorageService();
+  final _userStorage = UserStorageService();
   String? _selectedJsonFilePath;
   String? _selectedJsonFileName;
   String? _selectedLogoFilePath;
   String? _selectedLogoFileName;
+  List<UserModel> _testTokenUsers = [];
 
   @override
   void initState() {
@@ -39,9 +43,77 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       if (_selectedLogoFilePath != null) {
         _selectedLogoFileName = _selectedLogoFilePath!.split('/').last;
       }
-      if (widget.app!.testNotificationTokens != null && widget.app!.testNotificationTokens!.isNotEmpty) {
-        _testTokensController.text = widget.app!.testNotificationTokens!.join('\n');
+      _loadTestTokenUsers();
+    }
+  }
+
+  Future<void> _loadTestTokenUsers() async {
+    if (widget.app != null) {
+      final users = await _userStorage.getUsers(widget.app!.id);
+      // Filter users that are test tokens (name starts with "Test Device")
+      setState(() {
+        _testTokenUsers = users.where((u) => u.name.startsWith('Test Device')).toList();
+      });
+    }
+  }
+
+  Future<void> _addTestToken() async {
+    final token = _tokenInputController.text.trim();
+    if (token.isEmpty) return;
+
+    // Check if token already exists
+    if (_testTokenUsers.any((u) => u.notificationToken == token)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This token is already added'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
+      _tokenInputController.clear();
+      return;
+    }
+
+    // For new apps, we'll use a temporary appId and update it when saving
+    // For existing apps, use the actual appId
+    final appId = widget.app?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final testUserNumber = _testTokenUsers.length + 1;
+    final user = UserModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      appId: appId,
+      name: 'Test Device $testUserNumber',
+      notificationToken: token,
+      createdAt: DateTime.now(),
+    );
+
+    // Only save to storage if app already exists
+    if (widget.app != null) {
+      await _userStorage.saveUser(user);
+    }
+    
+    setState(() {
+      _testTokenUsers.add(user);
+    });
+    _tokenInputController.clear();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Test token added')),
+      );
+    }
+  }
+
+  Future<void> _removeTestToken(UserModel user) async {
+    await _userStorage.deleteUser(user.id);
+    setState(() {
+      _testTokenUsers.removeWhere((u) => u.id == user.id);
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Test token removed')),
+      );
     }
   }
 
@@ -145,22 +217,26 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       return;
     }
 
-    final testTokensText = _testTokensController.text.trim();
-    final testTokens = testTokensText.isEmpty
-        ? null
-        : testTokensText
-            .split('\n')
-            .map((token) => token.trim())
-            .where((token) => token.isNotEmpty)
-            .toList();
+    final appId = widget.app?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // Save test token users with correct appId
+    for (var user in _testTokenUsers) {
+      final updatedUser = UserModel(
+        id: user.id,
+        appId: appId,
+        name: user.name,
+        notificationToken: user.notificationToken,
+        createdAt: user.createdAt,
+      );
+      await _userStorage.saveUser(updatedUser);
+    }
 
     final app = AppModel(
-      id: widget.app?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: appId,
       name: _nameController.text.trim(),
       packageName: _packageController.text.trim(),
       jsonFilePath: _selectedJsonFilePath!,
       logoFilePath: _selectedLogoFilePath,
-      testNotificationTokens: testTokens?.isEmpty ?? true ? null : testTokens,
       createdAt: widget.app?.createdAt ?? DateTime.now(),
     );
 
@@ -178,7 +254,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   void dispose() {
     _nameController.dispose();
     _packageController.dispose();
-    _testTokensController.dispose();
+    _tokenInputController.dispose();
     super.dispose();
   }
 
@@ -304,17 +380,73 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         'Select your Firebase service account JSON file. This file is required.',
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _testTokensController,
-                        decoration: const InputDecoration(
-                          labelText: 'Test Notification Tokens',
-                          hintText: 'Enter FCM tokens, one per line',
-                          border: OutlineInputBorder(),
-                          helperText: 'Enter FCM device tokens for testing notifications locally, one token per line',
-                        ),
-                        maxLines: 5,
+                      const SizedBox(height: 24),
+                      Text(
+                        'Test Notification Tokens',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Add FCM device tokens for testing. Each token will be automatically created as a user.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _tokenInputController,
+                              decoration: const InputDecoration(
+                                labelText: 'FCM Token',
+                                hintText: 'Enter FCM device token',
+                                border: OutlineInputBorder(),
+                              ),
+                              onFieldSubmitted: (_) => _addTestToken(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: _addTestToken,
+                            icon: const HeroIcon(HeroIcons.plus),
+                            label: const Text('Add'),
+                          ),
+                        ],
+                      ),
+                      if (_testTokenUsers.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _testTokenUsers.map((user) {
+                            final displayToken = user.notificationToken.length > 25
+                                ? '${user.notificationToken.substring(0, 25)}...'
+                                : user.notificationToken;
+                            return Tooltip(
+                              message: user.notificationToken,
+                              child: Chip(
+                                label: Text(
+                                  displayToken,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                deleteIcon: const HeroIcon(HeroIcons.xMark, size: 16),
+                                onDeleted: () => _removeTestToken(user),
+                                avatar: CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                  child: Text(
+                                    user.name.replaceAll('Test Device ', ''),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ],
                   ),
                 ),

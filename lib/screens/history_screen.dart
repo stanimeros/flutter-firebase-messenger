@@ -200,9 +200,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 children: [
                                   _buildInfoRow('App', notification.appName),
                                   _buildInfoRow('Body', notification.body),
-                                  if (notification.imageUrl != null)
-                                    _buildInfoRow(
-                                        'Image URL', notification.imageUrl!),
                                   if (notification.topic != null)
                                     _buildInfoRow('Topic', notification.topic!),
                                   if (notification.tokens != null &&
