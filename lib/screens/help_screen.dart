@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../widgets/custom_app_bar.dart';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -46,21 +47,28 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Help & Documentation'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: HeroIcon(HeroIcons.informationCircle), text: 'App Guide'),
-            Tab(icon: HeroIcon(HeroIcons.bookOpen), text: 'FCM Docs'),
-          ],
-        ),
+      appBar: CustomAppBar(
+        title: 'Help & Documentation',
+        showBackButton: true,
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildAppGuide(),
-          _buildDocumentation(),
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: HeroIcon(HeroIcons.informationCircle), text: 'App Guide'),
+              Tab(icon: HeroIcon(HeroIcons.bookOpen), text: 'FCM Docs'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildAppGuide(),
+                _buildDocumentation(),
+              ],
+            ),
+          ),
         ],
       ),
     );

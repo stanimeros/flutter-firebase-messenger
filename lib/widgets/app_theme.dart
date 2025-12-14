@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Firebase-inspired colors
@@ -20,9 +21,19 @@ class AppTheme {
   static const Color darkOnError = Color(0xFF000000);
 
   static ThemeData get darkTheme {
+    final textTheme = GoogleFonts.interTextTheme();
+    
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      textTheme: textTheme.apply(
+        bodyColor: darkOnSurface,
+        displayColor: darkOnSurface,
+      ),
+      primaryTextTheme: textTheme.apply(
+        bodyColor: darkOnPrimary,
+        displayColor: darkOnPrimary,
+      ),
       colorScheme: ColorScheme.dark(
         primary: firebaseOrange,
         onPrimary: darkOnPrimary,
@@ -131,12 +142,12 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.inter(
           color: darkOnSurface,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
-        contentTextStyle: TextStyle(
+        contentTextStyle: GoogleFonts.inter(
           color: darkOnSurface.withValues(alpha: 0.9),
           fontSize: 16,
         ),

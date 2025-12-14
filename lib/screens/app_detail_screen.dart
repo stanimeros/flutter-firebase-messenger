@@ -5,6 +5,7 @@ import '../models/topic_model.dart';
 import '../models/user_model.dart';
 import '../services/topic_storage_service.dart';
 import '../services/user_storage_service.dart';
+import '../widgets/custom_app_bar.dart';
 import 'create_app_screen.dart';
 
 class AppDetailScreen extends StatefulWidget {
@@ -188,11 +189,15 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.app.name),
+      appBar: CustomAppBar(
+        title: widget.app.name,
+        showBackButton: true,
         actions: [
           IconButton(
-            icon: const HeroIcon(HeroIcons.pencil),
+            icon: const HeroIcon(
+              HeroIcons.pencil,
+              color: Colors.white,
+            ),
             onPressed: () async {
               final result = await Navigator.push(
                 context,
@@ -208,19 +213,25 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
             tooltip: 'Edit App',
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: HeroIcon(HeroIcons.hashtag), text: 'Topics'),
-            Tab(icon: HeroIcon(HeroIcons.user), text: 'Users'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildTopicsTab(),
-          _buildUsersTab(),
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: HeroIcon(HeroIcons.hashtag), text: 'Topics'),
+              Tab(icon: HeroIcon(HeroIcons.user), text: 'Users'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildTopicsTab(),
+                _buildUsersTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -8,6 +8,7 @@ import '../models/app_model.dart';
 import '../models/user_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/user_storage_service.dart';
+import '../widgets/custom_app_bar.dart';
 
 class CreateAppScreen extends StatefulWidget {
   final AppModel? app;
@@ -22,7 +23,6 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _packageController = TextEditingController();
-  final _tokenInputController = TextEditingController();
   final _appStorage = AppStorageService();
   final _userStorage = UserStorageService();
   String? _selectedJsonFilePath;
@@ -57,50 +57,48 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     }
   }
 
-  Future<void> _addTestToken() async {
-    final token = _tokenInputController.text.trim();
-    if (token.isEmpty) return;
-
-    // Check if token already exists
-    if (_testTokenUsers.any((u) => u.notificationToken == token)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This token is already added'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      _tokenInputController.clear();
-      return;
-    }
-
-    // For new apps, we'll use a temporary appId and update it when saving
-    // For existing apps, use the actual appId
-    final appId = widget.app?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    final testUserNumber = _testTokenUsers.length + 1;
-    final user = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      appId: appId,
-      name: 'Test Device $testUserNumber',
-      notificationToken: token,
-      createdAt: DateTime.now(),
+  Future<void> _showAddTokenDialog() async {
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => const _AddTokenDialog(),
     );
 
-    // Only save to storage if app already exists
-    if (widget.app != null) {
-      await _userStorage.saveUser(user);
-    }
-    
-    setState(() {
-      _testTokenUsers.add(user);
-    });
-    _tokenInputController.clear();
+    if (result != null && result.containsKey('name') && result.containsKey('token')) {
+      final name = result['name']!;
+      final token = result['token']!;
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Test token added')),
+      // Check if token already exists
+      if (_testTokenUsers.any((u) => u.notificationToken == token)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This token is already added'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // For new apps, we'll use a temporary appId and update it when saving
+      // For existing apps, use the actual appId
+      final appId = widget.app?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+      final user = UserModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        appId: appId,
+        name: 'Test Device: $name',
+        notificationToken: token,
+        createdAt: DateTime.now(),
       );
+
+      // Only save to storage if app already exists
+      if (widget.app != null) {
+        await _userStorage.saveUser(user);
+      }
+      
+      setState(() {
+        _testTokenUsers.add(user);
+      });
     }
   }
 
@@ -254,15 +252,15 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   void dispose() {
     _nameController.dispose();
     _packageController.dispose();
-    _tokenInputController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.app == null ? 'Create App' : 'Edit App'),
+      appBar: CustomAppBar(
+        title: widget.app == null ? 'Create App' : 'Edit App',
+        showBackButton: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -391,26 +389,10 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _tokenInputController,
-                              decoration: const InputDecoration(
-                                labelText: 'FCM Token',
-                                hintText: 'Enter FCM device token',
-                                border: OutlineInputBorder(),
-                              ),
-                              onFieldSubmitted: (_) => _addTestToken(),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: _addTestToken,
-                            icon: const HeroIcon(HeroIcons.plus),
-                            label: const Text('Add'),
-                          ),
-                        ],
+                      ElevatedButton.icon(
+                        onPressed: _showAddTokenDialog,
+                        icon: const HeroIcon(HeroIcons.plus),
+                        label: const Text('Add Test Token'),
                       ),
                       if (_testTokenUsers.isNotEmpty) ...[
                         const SizedBox(height: 16),
@@ -418,14 +400,15 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           spacing: 8,
                           runSpacing: 8,
                           children: _testTokenUsers.map((user) {
-                            final displayToken = user.notificationToken.length > 25
-                                ? '${user.notificationToken.substring(0, 25)}...'
+                            final displayName = user.name.replaceAll('Test Device: ', '');
+                            final displayToken = user.notificationToken.length > 20
+                                ? '${user.notificationToken.substring(0, 20)}...'
                                 : user.notificationToken;
                             return Tooltip(
-                              message: user.notificationToken,
+                              message: '${user.name}\n${user.notificationToken}',
                               child: Chip(
                                 label: Text(
-                                  displayToken,
+                                  '$displayName: $displayToken',
                                   style: const TextStyle(fontSize: 11),
                                 ),
                                 deleteIcon: const HeroIcon(HeroIcons.xMark, size: 16),
@@ -434,7 +417,9 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                                   radius: 12,
                                   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                                   child: Text(
-                                    user.name.replaceAll('Test Device ', ''),
+                                    displayName.isNotEmpty 
+                                        ? displayName.substring(0, 1).toUpperCase()
+                                        : 'T',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -460,6 +445,92 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AddTokenDialog extends StatefulWidget {
+  const _AddTokenDialog();
+
+  @override
+  State<_AddTokenDialog> createState() => _AddTokenDialogState();
+}
+
+class _AddTokenDialogState extends State<_AddTokenDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _tokenController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Test Notification Token'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'Enter a name for this test device',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _tokenController,
+                decoration: const InputDecoration(
+                  labelText: 'FCM Token',
+                  hintText: 'Enter FCM device token',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a token';
+                  }
+                  return null;
+                },
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, {
+                'name': _nameController.text.trim(),
+                'token': _tokenController.text.trim(),
+              });
+            }
+          },
+          child: const Text('Add'),
+        ),
+      ],
     );
   }
 }

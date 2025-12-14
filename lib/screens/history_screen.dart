@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:intl/intl.dart';
 import '../models/notification_model.dart';
 import '../services/notification_storage_service.dart';
 
@@ -185,8 +184,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ],
                           ),
                           subtitle: Text(
-                            DateFormat('MMM dd, yyyy HH:mm')
-                                .format(notification.createdAt),
+                            notification.createdAt.toLocal().toString(),
                           ),
                           trailing: IconButton(
                             icon: const HeroIcon(HeroIcons.trash),

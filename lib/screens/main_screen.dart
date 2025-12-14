@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
+import '../widgets/custom_app_bar.dart';
 import 'add_app_screen.dart';
 import 'create_notification_screen.dart';
 import 'history_screen.dart';
@@ -24,11 +25,14 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Firebase Messenger'),
+      appBar: CustomAppBar(
+        title: 'Firebase Messenger',
         actions: [
           IconButton(
-            icon: const HeroIcon(HeroIcons.questionMarkCircle),
+            icon: const HeroIcon(
+              HeroIcons.questionMarkCircle,
+              color: Colors.white,
+            ),
             onPressed: () {
               Navigator.push(
                 context,
