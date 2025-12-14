@@ -19,6 +19,7 @@ dependencies:
   webview_flutter: ^4.13.0
   google_fonts: ^6.3.3
   multiselect: ^0.1.1
+  googleapis_auth: ^2.0.0
 
 dev_dependencies:
   flutter_test:

@@ -32,22 +32,5 @@ class AppModel {
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
-
-  AppModel copyWith({
-    String? id,
-    String? name,
-    String? packageName,
-    String? jsonFilePath,
-    String? logoImageData,
-    DateTime? createdAt,
-  }) {
-    return AppModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      packageName: packageName ?? this.packageName,
-      logoImageData: logoImageData ?? this.logoImageData,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
 }
 
