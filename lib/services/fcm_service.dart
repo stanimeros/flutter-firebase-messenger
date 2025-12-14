@@ -8,13 +8,14 @@ class FCMService {
 
   Future<String?> _getServerKeyFromJson(String appId) async {
     try {
-      // Try to get JSON from secure storage first
+      // Get JSON from secure storage (same approach as create_app_screen)
       final jsonContent = await _secureStorage.getAppCredentials(appId);
       
       if (jsonContent == null || jsonContent.isEmpty) {
         throw Exception('JSON credentials not found. Please update the app and select the JSON file again.');
       }
       
+      // Parse JSON the same way as create_app_screen
       final jsonData = jsonDecode(jsonContent) as Map<String, dynamic>;
       
       // Try to find server key in various possible fields

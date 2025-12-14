@@ -2,16 +2,14 @@ class AppModel {
   final String id;
   final String name;
   final String packageName;
-  final String jsonFilePath;
-  final String? logoFilePath;
+  final String? logoImageData; // Base64 encoded image data
   final DateTime createdAt;
 
   AppModel({
     required this.id,
     required this.name,
     required this.packageName,
-    required this.jsonFilePath,
-    this.logoFilePath,
+    this.logoImageData,
     required this.createdAt,
   });
 
@@ -20,8 +18,7 @@ class AppModel {
       'id': id,
       'name': name,
       'packageName': packageName,
-      'jsonFilePath': jsonFilePath,
-      'logoFilePath': logoFilePath,
+      'logoImageData': logoImageData,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -31,8 +28,7 @@ class AppModel {
       id: json['id'] as String,
       name: json['name'] as String,
       packageName: json['packageName'] as String,
-      jsonFilePath: json['jsonFilePath'] as String? ?? json['serverKey'] as String? ?? '',
-      logoFilePath: json['logoFilePath'] as String?,
+      logoImageData: json['logoImageData'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -42,15 +38,14 @@ class AppModel {
     String? name,
     String? packageName,
     String? jsonFilePath,
-    String? logoFilePath,
+    String? logoImageData,
     DateTime? createdAt,
   }) {
     return AppModel(
       id: id ?? this.id,
       name: name ?? this.name,
       packageName: packageName ?? this.packageName,
-      jsonFilePath: jsonFilePath ?? this.jsonFilePath,
-      logoFilePath: logoFilePath ?? this.logoFilePath,
+      logoImageData: logoImageData ?? this.logoImageData,
       createdAt: createdAt ?? this.createdAt,
     );
   }

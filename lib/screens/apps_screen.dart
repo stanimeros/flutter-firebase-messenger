@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
@@ -40,37 +40,34 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
     });
   }
 
-  Widget _buildAppLogo(String? logoFilePath) {
-    if (logoFilePath == null) {
+  Widget _buildAppLogo(String? logoImageData) {
+    if (logoImageData == null || logoImageData.isEmpty) {
       return const CircleAvatar(
         child: HeroIcon(HeroIcons.devicePhoneMobile),
       );
     }
 
-    return FutureBuilder<bool>(
-      future: File(logoFilePath).exists(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data == true) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.file(
-              File(logoFilePath),
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const CircleAvatar(
-                  child: HeroIcon(HeroIcons.devicePhoneMobile),
-                );
-              },
-            ),
-          );
-        }
-        return const CircleAvatar(
-          child: HeroIcon(HeroIcons.devicePhoneMobile),
-        );
-      },
-    );
+    try {
+      final imageBytes = base64Decode(logoImageData);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.memory(
+          imageBytes,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const CircleAvatar(
+              child: HeroIcon(HeroIcons.devicePhoneMobile),
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      return const CircleAvatar(
+        child: HeroIcon(HeroIcons.devicePhoneMobile),
+      );
+    }
   }
 
 
@@ -114,7 +111,7 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: _buildAppLogo(app.logoFilePath),
+                    leading: _buildAppLogo(app.logoImageData),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
                     trailing: IconButton(

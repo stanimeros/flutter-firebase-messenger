@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
 import '../models/user_model.dart';
@@ -27,10 +26,9 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _appStorage = AppStorageService();
   final _userStorage = UserStorageService();
   final _secureStorage = SecureStorageService();
-  String? _selectedJsonFileName;
   String? _selectedJsonContent;
   Map<String, dynamic>? _parsedJsonData;
-  String? _selectedLogoFilePath;
+  String? _selectedLogoImageData; // Base64 encoded image data
   List<UserModel> _testTokenUsers = [];
 
   @override
@@ -39,7 +37,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     if (widget.app != null) {
       _nameController.text = widget.app!.name;
       _packageController.text = widget.app!.packageName;
-      _selectedLogoFilePath = widget.app!.logoFilePath;
+      _selectedLogoImageData = widget.app!.logoImageData;
       // Load existing JSON credentials from secure storage
       _loadExistingCredentials();
       _loadTestTokenUsers();
@@ -55,14 +53,12 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
           setState(() {
             _selectedJsonContent = credentials;
             _parsedJsonData = parsedData;
-            _selectedJsonFileName = 'credentials.json'; // Default name for existing credentials
           });
         } catch (e) {
           // If parsing fails, just store the content
           setState(() {
             _selectedJsonContent = credentials;
             _parsedJsonData = null;
-            _selectedJsonFileName = 'credentials.json';
           });
         }
       }
@@ -158,7 +154,6 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
           setState(() {
             _selectedJsonContent = jsonContent;
             _parsedJsonData = parsedData;
-            _selectedJsonFileName = result.files.single.name;
           });
         } catch (e) {
           if (mounted) {
@@ -184,7 +179,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   }
 
   Widget _buildLogoPreview() {
-    if (_selectedLogoFilePath == null) {
+    if (_selectedLogoImageData == null || _selectedLogoImageData!.isEmpty) {
       return Container(
         width: 100,
         height: 100,
@@ -205,60 +200,57 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       );
     }
 
-    return FutureBuilder<bool>(
-      future: File(_selectedLogoFilePath!).exists(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data == true) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.file(
-              File(_selectedLogoFilePath!),
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey,
-                      width: 2,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.image,
-                    size: 50,
-                    color: Colors.grey,
-                  ),
-                );
-              },
-            ),
-          );
-        }
-        return Container(
+    try {
+      final imageBytes = base64Decode(_selectedLogoImageData!);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          imageBytes,
           width: 100,
           height: 100,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.grey,
-              width: 2,
-              style: BorderStyle.solid,
-            ),
-          ),
-          child: const Icon(
-            Icons.image,
-            size: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.grey,
+                  width: 2,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: const Icon(
+                Icons.image,
+                size: 50,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      return Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
             color: Colors.grey,
+            width: 2,
+            style: BorderStyle.solid,
           ),
-        );
-      },
-    );
+        ),
+        child: const Icon(
+          Icons.image,
+          size: 50,
+          color: Colors.grey,
+        ),
+      );
+    }
   }
 
   Future<void> _pickLogoFile() async {
@@ -272,16 +264,12 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         final filePath = result.files.single.path!;
         final file = File(filePath);
         
-        // Copy file to app documents directory
-        final appDir = await getApplicationDocumentsDirectory();
-        final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-        final extension = filePath.split('.').last;
-        final fileName = 'app_${timestamp}_logo.$extension';
-        final savedFile = File('${appDir.path}/$fileName');
-        await file.copy(savedFile.path);
+        // Read image as bytes and convert to base64
+        final imageBytes = await file.readAsBytes();
+        final base64Image = base64Encode(imageBytes);
         
         setState(() {
-          _selectedLogoFilePath = savedFile.path;
+          _selectedLogoImageData = base64Image;
         });
       }
     } catch (e) {
@@ -342,8 +330,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       id: appId,
       name: _nameController.text.trim(),
       packageName: _packageController.text.trim(),
-      jsonFilePath: '', // No longer used, credentials are in secure storage
-      logoFilePath: _selectedLogoFilePath,
+      logoImageData: _selectedLogoImageData,
       createdAt: widget.app?.createdAt ?? DateTime.now(),
     );
 
@@ -447,51 +434,23 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: _pickJsonFile,
-                        icon: const HeroIcon(HeroIcons.folderOpen),
-                        label: Text(_selectedJsonFileName ?? 'Select JSON File'),
-                      ),
-                      if (_selectedJsonFileName != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Selected: $_selectedJsonFileName',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 12,
-                          ),
+                      if (_selectedJsonContent == null || _selectedJsonContent!.isEmpty)
+                        OutlinedButton.icon(
+                          onPressed: _pickJsonFile,
+                          icon: const HeroIcon(HeroIcons.folderOpen),
+                          label: const Text('Select JSON File'),
                         ),
-                      ],
-                      if (_selectedJsonContent != null && _selectedJsonContent!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Credentials added',
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                       if (_parsedJsonData != null) ...[
                         const SizedBox(height: 16),
                         _buildJsonFieldsExpansion(),
                       ],
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Select your Firebase service account JSON file. This file is required.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
+                      if (_selectedJsonContent == null || _selectedJsonContent!.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Select your Firebase service account JSON file. This file is required.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       Text(
                         'Test Notification Tokens',
@@ -592,26 +551,42 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: otherFields.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: TextFormField(
-                    initialValue: _formatJsonValue(entry.value),
-                    enabled: false,
-                    decoration: InputDecoration(
-                      labelText: entry.key,
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              children: [
+                ...otherFields.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: TextFormField(
+                      initialValue: _formatJsonValue(entry.value),
+                      enabled: false,
+                      decoration: InputDecoration(
+                        labelText: entry.key,
+                        border: const OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      maxLines: entry.key == 'private_key' ? 5 : 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
-                    maxLines: entry.key == 'private_key' ? 5 : 1,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _selectedJsonContent = null;
+                      _parsedJsonData = null;
+                    });
+                  },
+                  icon: const HeroIcon(HeroIcons.trash),
+                  label: const Text('Clear Data'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
           ),
         ],
