@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../widgets/custom_app_bar.dart';
-import 'add_app_screen.dart';
+import 'apps_screen.dart';
 import 'create_notification_screen.dart';
 import 'history_screen.dart';
 import 'help_screen.dart';
@@ -17,7 +17,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    AddAppScreen(),
+    AppsScreen(),
     CreateNotificationScreen(),
     HistoryScreen(),
   ];

@@ -6,14 +6,14 @@ import '../services/app_storage_service.dart';
 import 'app_detail_screen.dart';
 import 'create_app_screen.dart';
 
-class AddAppScreen extends StatefulWidget {
-  const AddAppScreen({super.key});
+class AppsScreen extends StatefulWidget {
+  const AppsScreen({super.key});
 
   @override
-  State<AddAppScreen> createState() => _AddAppScreenState();
+  State<AppsScreen> createState() => _AppsScreenState();
 }
 
-class _AddAppScreenState extends State<AddAppScreen> with AutomaticKeepAliveClientMixin {
+class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMixin {
   final _appStorage = AppStorageService();
   List<AppModel> _apps = [];
 

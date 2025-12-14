@@ -29,6 +29,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _secureStorage = SecureStorageService();
   String? _selectedJsonFileName;
   String? _selectedJsonContent;
+  Map<String, dynamic>? _parsedJsonData;
   String? _selectedLogoFilePath;
   List<UserModel> _testTokenUsers = [];
 
@@ -49,10 +50,21 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     if (widget.app != null) {
       final credentials = await _secureStorage.getAppCredentials(widget.app!.id);
       if (credentials != null && credentials.isNotEmpty) {
-        setState(() {
-          _selectedJsonContent = credentials;
-          _selectedJsonFileName = 'credentials.json'; // Default name for existing credentials
-        });
+        try {
+          final parsedData = json.decode(credentials) as Map<String, dynamic>;
+          setState(() {
+            _selectedJsonContent = credentials;
+            _parsedJsonData = parsedData;
+            _selectedJsonFileName = 'credentials.json'; // Default name for existing credentials
+          });
+        } catch (e) {
+          // If parsing fails, just store the content
+          setState(() {
+            _selectedJsonContent = credentials;
+            _parsedJsonData = null;
+            _selectedJsonFileName = 'credentials.json';
+          });
+        }
       }
     }
   }
@@ -140,11 +152,12 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         // Validate JSON
         try {
           final jsonContent = await file.readAsString();
-          json.decode(jsonContent); // Validate JSON format
+          final parsedData = json.decode(jsonContent) as Map<String, dynamic>; // Validate and parse JSON
           
           // Store JSON content for secure storage
           setState(() {
             _selectedJsonContent = jsonContent;
+            _parsedJsonData = parsedData;
             _selectedJsonFileName = result.files.single.name;
           });
         } catch (e) {
@@ -449,6 +462,31 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           ),
                         ),
                       ],
+                      if (_selectedJsonContent != null && _selectedJsonContent!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Credentials added',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (_parsedJsonData != null) ...[
+                        const SizedBox(height: 16),
+                        _buildJsonFieldsExpansion(),
+                      ],
                       const SizedBox(height: 8),
                       const Text(
                         'Select your Firebase service account JSON file. This file is required.',
@@ -522,6 +560,72 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildJsonFieldsExpansion() {
+    if (_parsedJsonData == null) return const SizedBox.shrink();
+    
+    final projectId = _parsedJsonData!['project_id']?.toString() ?? 'N/A';
+    final otherFields = Map<String, dynamic>.from(_parsedJsonData!);
+    otherFields.remove('project_id'); // Remove project_id as it's the title
+    
+    return Card(
+      child: ExpansionTile(
+        title: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Project ID: $projectId',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: otherFields.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: TextFormField(
+                    initialValue: _formatJsonValue(entry.value),
+                    enabled: false,
+                    decoration: InputDecoration(
+                      labelText: entry.key,
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                    maxLines: entry.key == 'private_key' ? 5 : 1,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatJsonValue(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    if (value is Map || value is List) {
+      return jsonEncode(value);
+    }
+    return value.toString();
   }
 }
 
