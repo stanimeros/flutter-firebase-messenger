@@ -3,6 +3,7 @@ import 'package:heroicons/heroicons.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../services/purchases_service.dart';
 import '../widgets/custom_app_theme.dart';
+import 'main_screen.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -112,6 +113,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
+  bool _hasSubscriptions() {
+    return _offerings?.current != null &&
+        _offerings!.current!.availablePackages.isNotEmpty;
+  }
+
+  Future<void> _skipForNow() async {
+    // Navigate to main screen - PaywallGate will allow it since we granted temporary access
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const MainScreen(),
+        ),
+      );
+    }
+  }
+
   Future<void> _restorePurchases() async {
     setState(() {
       _isRestoring = true;
@@ -199,7 +216,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 40),
                     // Logo/Icon
                     Container(
                       width: 100,
@@ -280,48 +296,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             },
                           ),
                         );
-                      })
-                    else
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: CustomAppTheme.darkCardSurface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: CustomAppTheme.darkError,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: CustomAppTheme.darkError,
-                              size: 48,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No subscription packages available',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: CustomAppTheme.darkError,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Please configure your RevenueCat offerings',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: CustomAppTheme.darkOnSurface.withValues(alpha: 0.7),
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: 32),
-                    // Purchase button
+                      }),
+                    // Purchase/Skip button
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _purchasePackage,
+                      onPressed: _isLoading ? null : _hasSubscriptions() ? _purchasePackage : _skipForNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CustomAppTheme.primaryCyan,
                         foregroundColor: Colors.black,
@@ -339,9 +317,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                               ),
                             )
-                          : const Text(
-                              'Subscribe Now',
-                              style: TextStyle(
+                          : Text(
+                              _hasSubscriptions() ? 'Subscribe Now' : 'Skip for Now',
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),

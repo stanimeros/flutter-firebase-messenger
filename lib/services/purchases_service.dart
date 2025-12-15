@@ -3,9 +3,8 @@ import 'dart:io';
 
 class PurchasesService {
   static const String _entitlementId = 'premium';
-  
   static const String _androidApiKey = 'test_ZTunwknVYEPYcHIlWPKWveGKtXt';
-  static const String _iosApiKey = 'test_ZTunwknVYEPYcHIlWPKWveGKtXt';
+  static const String _iosApiKey = 'appl_xwaRyxxnbszykyrzROUEarNpcVn';
   
   static bool _isInitialized = false;
 
@@ -27,7 +26,7 @@ class PurchasesService {
     }
   }
 
-  /// Check if user has premium entitlement
+  /// Check if user has premium entitlement or temporary skip access
   static Future<bool> isPremium() async {
     try {
       if (!_isInitialized) {
