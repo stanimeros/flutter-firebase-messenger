@@ -146,8 +146,6 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    _buildInfoCard('App', notification.app.name, icon: HeroIcons.devicePhoneMobile),
-                                    const SizedBox(height: 8),
                                     _buildInfoCard('Body', notification.body, icon: HeroIcons.documentText),
                                     if (notification.topic != null) ...[
                                       const SizedBox(height: 8),
