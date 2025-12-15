@@ -99,25 +99,28 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   }
 
   Widget _buildLogoPreview() {
+    final theme = Theme.of(context);
+    final emptyPlaceholder = Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+          width: 2,
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: Icon(
+        Icons.image,
+        size: 50,
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+      ),
+    );
+
     if (_selectedLogoImageData == null || _selectedLogoImageData!.isEmpty) {
-      return Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.grey,
-            width: 2,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: const Icon(
-          Icons.image,
-          size: 50,
-          color: Colors.grey,
-        ),
-      );
+      return emptyPlaceholder;
     }
 
     try {
@@ -130,46 +133,12 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
           height: 100,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            return Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.grey,
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: const Icon(
-                Icons.image,
-                size: 50,
-                color: Colors.grey,
-              ),
-            );
+            return emptyPlaceholder;
           },
         ),
       );
     } catch (e) {
-      return Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.grey,
-            width: 2,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: const Icon(
-          Icons.image,
-          size: 50,
-          color: Colors.grey,
-        ),
-      );
+      return emptyPlaceholder;
     }
   }
 
@@ -263,10 +232,10 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: Text(widget.app == null ? 'Create App' : 'Edit App'),
+        title: const SizedBox.shrink(),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Form(
           key: _formKey,
           child: Column(
@@ -274,7 +243,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
             children: [
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -282,7 +251,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         'App Information',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       // Logo picker
                       Center(
                         child: GestureDetector(
@@ -310,7 +279,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(
@@ -325,7 +294,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _packageController,
                         decoration: const InputDecoration(
@@ -340,29 +309,26 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       if (_serviceAccount == null)
-                        OutlinedButton.icon(
-                          onPressed: _pickJsonFile,
-                          icon: const HeroIcon(HeroIcons.folderOpen),
-                          label: const Text('Select JSON File'),
+                        InkWell(
+                          onTap: _pickJsonFile,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InputDecorator(
+                            isEmpty: true,
+                            decoration: InputDecoration(
+                              labelText: 'Pick a json file',
+                            ),
+                          ),
                         ),
                       if (_serviceAccount != null) ...[
-                        const SizedBox(height: 16),
                         _buildJsonFieldsExpansion(),
-                      ],
-                      if (_serviceAccount == null) ...[
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Select your Firebase service account JSON file. This file is required.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
                       ],
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _saveApp,
                 child: Text(widget.app == null ? 'Save App' : 'Update App'),
@@ -388,16 +354,16 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Project ID: ${_serviceAccount!['project_id']}',
+              _serviceAccount!['project_id'],
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -504,7 +470,7 @@ class _AddTokenDialogState extends State<_AddTokenDialog> {
                 },
                 textCapitalization: TextCapitalization.words,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _tokenController,
                 decoration: const InputDecoration(

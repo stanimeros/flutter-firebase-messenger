@@ -48,34 +48,49 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
     });
   }
 
-  Widget _buildAppLogo(String? logoImageData) {
+  Widget _buildAppLogo(String? logoImageData, String appName) {
     if (logoImageData == null || logoImageData.isEmpty) {
-      return const CircleAvatar(
-        child: HeroIcon(HeroIcons.devicePhoneMobile),
-      );
+      return _buildDefaultAvatar(appName);
     }
 
     try {
       final imageBytes = base64Decode(logoImageData);
       return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         child: Image.memory(
           imageBytes,
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            return const CircleAvatar(
-              child: HeroIcon(HeroIcons.devicePhoneMobile),
-            );
+            return _buildDefaultAvatar(appName);
           },
         ),
       );
     } catch (e) {
-      return const CircleAvatar(
-        child: HeroIcon(HeroIcons.devicePhoneMobile),
-      );
+      return _buildDefaultAvatar(appName);
     }
+  }
+
+  Widget _buildDefaultAvatar(String appName) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          appName.isNotEmpty ? appName[0].toUpperCase() : 'A',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
   }
 
 
@@ -94,7 +109,7 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                     style: HeroIconStyle.outline,
                     color: Colors.grey,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Text(
                     'No apps added yet',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -112,14 +127,14 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               itemCount: _apps.length,
               itemBuilder: (context, index) {
                 final app = _apps[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: _buildAppLogo(app.imageData),
+                    leading: _buildAppLogo(app.imageData, app.name),
                     title: Text(app.name),
                     subtitle: Text(app.packageName),
                     trailing: IconButton(

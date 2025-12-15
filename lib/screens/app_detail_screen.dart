@@ -220,7 +220,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: Text(widget.app.name),
+        title: const SizedBox.shrink(),
         actions: [
           IconButton(
             icon: const HeroIcon(
@@ -301,7 +301,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
 
   Widget _buildTopicsTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -317,7 +317,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                       style: HeroIconStyle.outline,
                       color: Colors.grey,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
                       'No topics added yet',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -349,7 +349,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
 
   Widget _buildUsersTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -365,7 +365,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                       style: HeroIconStyle.outline,
                       color: Colors.grey,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
                       'No users added yet',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -504,7 +504,7 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                 textCapitalization: TextCapitalization.words,
                 autofocus: true,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _tokenController,
                 decoration: const InputDecoration(

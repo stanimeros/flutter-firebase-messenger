@@ -48,7 +48,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: Text('Help & Documentation'),
+        title: const SizedBox.shrink(),
       ),
       body: Column(
         children: [
@@ -96,13 +96,13 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
 
   Widget _buildAppGuide() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -116,7 +116,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '1. Navigate to the Apps tab',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -125,7 +125,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const Text(
                     'Tap the + button (Floating Action Button) to create a new app.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '2. Fill in App Information',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -137,7 +137,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                     '• Logo: Optionally select an image file for your app logo\n'
                     '• JSON File: Select your Firebase service account JSON file (required). For the JSON file, ask your developer to create a key through a service account with Firebase Cloud Messaging Admin API as role.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '3. Save the App',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -150,10 +150,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -167,7 +167,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '1. Open App Details',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -176,7 +176,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const Text(
                     'Tap on any app from the Apps tab to view its details.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '2. Add Topics',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -185,7 +185,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const Text(
                     'In the Topics tab, enter a topic name and tap "Add Topic". Topics allow you to send messages to groups of devices that have subscribed to that topic.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '3. Add Users',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -198,10 +198,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -215,7 +215,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '1. Select an App',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -224,7 +224,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const Text(
                     'Navigate to the Create tab and select an app from the dropdown. All fields will be enabled once an app is selected.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '2. Enter Notification Details',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -234,7 +234,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                     '• Title: The notification title (required)\n'
                     '• Body: The notification message text (required)',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '3. Choose Recipients',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -246,7 +246,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                     '• One or more Users: Send to specific devices by selecting users\n'
                     'Note: You can only select either a topic OR users, not both.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '4. Add Custom Data (Optional)',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -255,7 +255,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const Text(
                     'Add custom key-value pairs that will be sent with the notification. This data can be used by your app to perform custom actions.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '5. Send Notification',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -268,10 +268,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -285,7 +285,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     'The History tab shows all notifications you\'ve sent, including:',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -299,7 +299,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                     '• Timestamp\n'
                     '• Error messages (if any)',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     'You can expand each notification to see full details, delete individual notifications, or clear all history.',
                   ),
@@ -307,10 +307,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -324,7 +324,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '• Firebase service account JSON files are stored securely on your device\n'
                     '• Never share your service account credentials\n'

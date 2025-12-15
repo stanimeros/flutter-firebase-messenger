@@ -76,69 +76,11 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
     return false;
   }
 
-  Future<void> _clearHistory() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear History'),
-        content: const Text('Are you sure you want to clear all notification history?'),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await _notificationStorage.clearHistory();
-      _loadNotifications();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('History cleared')),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return Column(
       children: [
-        if (_notifications.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Notification History',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                OutlinedButton(
-                  onPressed: _clearHistory,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      HeroIcon(HeroIcons.trash),
-                      SizedBox(width: 8),
-                      Text('Clear All'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         Expanded(
           child: _notifications.isEmpty
               ? Center(
@@ -151,7 +93,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                         style: HeroIconStyle.outline,
                         color: Colors.grey,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
                         'No notifications sent yet',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -164,7 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
               : RefreshIndicator(
                   onRefresh: _loadNotifications,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     itemCount: _notifications.length,
                     itemBuilder: (context, index) {
                       final notification = _notifications[index];
@@ -199,31 +141,126 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                             trailing: _buildStatusIcon(notification.sent),
                             children: [
                               Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(12),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    _buildInfoRow('App', notification.app.name),
-                                    _buildInfoRow('Body', notification.body),
-                                    if (notification.topic != null)
-                                      _buildInfoRow('Topic', notification.topic!),
-                                    if (notification.tokens != null &&
-                                        notification.tokens!.isNotEmpty)
-                                      _buildInfoRow(
-                                          'Tokens',
-                                          '${notification.tokens!.length} token(s)'),
-                                    if (notification.data != null &&
-                                        notification.data!.isNotEmpty)
-                                      ...notification.data!.entries.map((entry) =>
-                                          _buildInfoRow(
-                                              'Data: ${entry.key}', entry.value.toString())),
-                                    _buildInfoRow(
-                                        'Status',
-                                        notification.sent ? 'Sent' : 'Failed'),
-                                    if (notification.error != null)
-                                      _buildInfoRow(
-                                          'Error', notification.error!,
-                                          isError: true),
+                                    _buildInfoCard('App', notification.app.name, icon: HeroIcons.devicePhoneMobile),
+                                    const SizedBox(height: 8),
+                                    _buildInfoCard('Body', notification.body, icon: HeroIcons.documentText),
+                                    if (notification.topic != null) ...[
+                                      const SizedBox(height: 8),
+                                      _buildInfoCard('Topic', notification.topic!, icon: HeroIcons.hashtag),
+                                    ],
+                                    if (notification.tokens != null && notification.tokens!.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      _buildInfoCard(
+                                        'Recipient',
+                                        '${notification.tokens!.length} token(s)',
+                                        icon: HeroIcons.user,
+                                      ),
+                                    ],
+                                    if (notification.data != null && notification.data!.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Card(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  HeroIcon(HeroIcons.codeBracket, size: 18),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'Custom Data',
+                                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              ...notification.data!.entries.map((entry) => Padding(
+                                                padding: const EdgeInsets.only(bottom: 4),
+                                                child: Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      '${entry.key}: ',
+                                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                                    ),
+                                                    Expanded(
+                                                      child: Text(
+                                                        entry.value.toString(),
+                                                        style: TextStyle(
+                                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    if (notification.error != null) ...[
+                                      const SizedBox(height: 8),
+                                      Card(
+                                        color: Theme.of(context).colorScheme.errorContainer,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              HeroIcon(
+                                                HeroIcons.exclamationCircle,
+                                                color: Theme.of(context).colorScheme.error,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Error',
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Theme.of(context).colorScheme.error,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      notification.error!,
+                                                      style: TextStyle(
+                                                        color: Theme.of(context).colorScheme.onErrorContainer,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 12),
+                                    OutlinedButton.icon(
+                                      onPressed: () => _deleteNotification(notification).then((deleted) {
+                                        if (deleted) {
+                                          widget.onDataChanged?.call();
+                                        }
+                                      }),
+                                      icon: const HeroIcon(HeroIcons.trash),
+                                      label: const Text('Delete Notification'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Theme.of(context).colorScheme.error,
+                                        side: BorderSide(color: Theme.of(context).colorScheme.error),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -239,29 +276,37 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isError = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isError ? Colors.red : null,
+  Widget _buildInfoCard(String label, String value, {required HeroIcons icon}) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HeroIcon(icon, size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: isError ? Colors.red : null),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

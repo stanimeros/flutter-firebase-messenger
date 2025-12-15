@@ -43,8 +43,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   List<TopicModel> _topics = [];
   List<UserModel> _users = [];
   TopicModel? _selectedTopic;
-  final Set<String> _selectedUserIds = {};
-  List<String> _selectedUserNames = [];
+  UserModel? _selectedUser;
   bool _isLoading = false;
   final Map<String, String> _customData = {};
   bool _useTopics = true; // true for topics, false for users
@@ -90,8 +89,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       _topics = topics;
       _users = users;
       _selectedTopic = null;
-      _selectedUserIds.clear();
-      _selectedUserNames.clear();
+      _selectedUser = null;
     });
   }
 
@@ -119,28 +117,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     });
   }
 
-  Future<void> _showSelectUsersDialog() async {
-    final Set<String> tempSelectedNames = Set.from(_selectedUserNames);
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => _SelectUsersDialog(
-        users: _users,
-        selectedNames: tempSelectedNames,
-      ),
-    );
-
-    if (result == true && mounted) {
-      setState(() {
-        _selectedUserNames = tempSelectedNames.toList();
-        _selectedUserIds.clear();
-        for (final name in _selectedUserNames) {
-          final user = _users.firstWhere((u) => u.name == name);
-          _selectedUserIds.add(user.id);
-        }
-      });
-    }
-  }
 
   Future<void> _sendNotification() async {
     if (!_formKey.currentState!.validate()) return;
@@ -157,9 +133,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       );
       return;
     }
-    if (!_useTopics && _selectedUserIds.isEmpty) {
+    if (!_useTopics && _selectedUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one user')),
+        const SnackBar(content: Text('Please select a user')),
       );
       return;
     }
@@ -176,12 +152,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         body: _bodyController.text.trim(),
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
-        tokens: _selectedUserIds.isEmpty
-            ? null
-            : _users
-                .where((u) => _selectedUserIds.contains(u.id))
-                .map((u) => u.notificationToken)
-                .toList(),
+        tokens: _selectedUser == null ? null : [_selectedUser!.notificationToken],
         createdAt: DateTime.now(),
       );
 
@@ -217,8 +188,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             if (_useTopics) {
               _selectedTopic = null;
             } else {
-              _selectedUserIds.clear();
-              _selectedUserNames.clear();
+              _selectedUser = null;
             }
             _customData.clear();
           });
@@ -233,12 +203,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         body: _bodyController.text.trim(),
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
-        tokens: _selectedUserIds.isEmpty
-            ? null
-            : _users
-                .where((u) => _selectedUserIds.contains(u.id))
-                .map((u) => u.notificationToken)
-                .toList(),
+        tokens: _selectedUser == null ? null : [_selectedUser!.notificationToken],
         createdAt: DateTime.now(),
         sent: false,
         error: e.toString(),
@@ -275,7 +240,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   Widget build(BuildContext context) {
     super.build(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Form(
         key: _formKey,
         child: Column(
@@ -283,15 +248,10 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           children: [
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Create Push Notification',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
                     DropdownButtonFormField<AppModel>(
                       initialValue: _selectedApp,
                       decoration: const InputDecoration(
@@ -311,7 +271,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         }
                       } : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _titleController,
                       enabled: _selectedApp != null,
@@ -327,7 +287,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _bodyController,
                       enabled: _selectedApp != null,
@@ -344,24 +304,20 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Row(
+                      mainAxisSize: MainAxisSize.max,
                       children: [
-                        Text(
-                          'Send to:',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(width: 16),
                         Expanded(
                           child: ToggleButtons(
                             isSelected: [_useTopics, !_useTopics],
+                            constraints: BoxConstraints(minWidth: (MediaQuery.of(context).size.width - 59) / 2),
                             onPressed: (index) {
                               setState(() {
                                 _useTopics = index == 0;
                                 // Clear the other selection when switching
                                 if (_useTopics) {
-                                  _selectedUserIds.clear();
-                                  _selectedUserNames.clear();
+                                  _selectedUser = null;
                                 } else {
                                   _selectedTopic = null;
                                 }
@@ -370,7 +326,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                             borderRadius: BorderRadius.circular(8),
                             children: const [
                               Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -381,7 +337,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                                 ),
                               ),
                               Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -396,7 +352,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     if (_useTopics)
                       DropdownButtonFormField<TopicModel?>(
                         initialValue: _selectedTopic,
@@ -414,43 +370,31 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                           });
                         } : null,
                       )
-                    else ...[
-                      OutlinedButton.icon(
-                        onPressed: _users.isEmpty ? null : _showSelectUsersDialog,
-                        icon: const HeroIcon(HeroIcons.user),
-                        label: Text(_selectedUserNames.isEmpty 
-                            ? 'Select Users' 
-                            : '${_selectedUserNames.length} user(s) selected'),
-                      ),
-                      if (_selectedUserNames.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _selectedUserNames.map((name) {
-                            return Chip(
-                              label: Text(name),
-                              onDeleted: () {
-                                setState(() {
-                                  _selectedUserNames.remove(name);
-                                  final user = _users.firstWhere((u) => u.name == name);
-                                  _selectedUserIds.remove(user.id);
-                                });
-                              },
-                              deleteIcon: const HeroIcon(HeroIcons.xMark, size: 18),
-                            );
-                          }).toList(),
+                    else
+                      DropdownButtonFormField<UserModel?>(
+                        initialValue: _selectedUser,
+                        decoration: const InputDecoration(
+                          labelText: 'Select User',
+                          border: OutlineInputBorder(),
                         ),
-                      ],
-                    ],
+                        items: _users.map((user) => DropdownMenuItem<UserModel?>(
+                          value: user,
+                          child: Text(user.name),
+                        )).toList(),
+                        onChanged: _users.isNotEmpty ? (user) {
+                          setState(() {
+                            _selectedUser = user;
+                          });
+                        } : null,
+                      ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -461,15 +405,15 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                           'Custom Data',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: _selectedApp != null ? _showAddCustomDataDialog : null,
                           icon: const HeroIcon(HeroIcons.plus),
-                          label: const Text('Add Data'),
+                          label: const Text('Add'),
                         ),
                       ],
                     ),
                     if (_customData.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       ..._customData.entries.map((entry) => Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
@@ -486,7 +430,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: (_selectedApp != null && !_isLoading) ? _sendNotification : null,
               child: _isLoading
@@ -579,7 +523,7 @@ class _AddCustomDataDialogState extends State<_AddCustomDataDialog> {
                 },
                 autofocus: true,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _valueController,
                 decoration: const InputDecoration(
@@ -620,85 +564,4 @@ class _AddCustomDataDialogState extends State<_AddCustomDataDialog> {
   }
 }
 
-class _SelectUsersDialog extends StatefulWidget {
-  final List<UserModel> users;
-  final Set<String> selectedNames;
-
-  const _SelectUsersDialog({
-    required this.users,
-    required this.selectedNames,
-  });
-
-  @override
-  State<_SelectUsersDialog> createState() => _SelectUsersDialogState();
-}
-
-class _SelectUsersDialogState extends State<_SelectUsersDialog> {
-  late Set<String> _selectedNames;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedNames = Set.from(widget.selectedNames);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Select Users'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: widget.users.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('No users available'),
-                ),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: widget.users.length,
-                itemBuilder: (context, index) {
-                  final user = widget.users[index];
-                  final isSelected = _selectedNames.contains(user.name);
-
-                  return CheckboxListTile(
-                    title: Text(user.name),
-                    subtitle: Text(
-                      user.notificationToken,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    value: isSelected,
-                    onChanged: (value) {
-                      setState(() {
-                        if (value == true) {
-                          _selectedNames.add(user.name);
-                        } else {
-                          _selectedNames.remove(user.name);
-                        }
-                      });
-                    },
-                  );
-                },
-              ),
-      ),
-      actions: [
-        OutlinedButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            widget.selectedNames.clear();
-            widget.selectedNames.addAll(_selectedNames);
-            Navigator.pop(context, true);
-          },
-          child: const Text('Done'),
-        ),
-      ],
-    );
-  }
-}
 

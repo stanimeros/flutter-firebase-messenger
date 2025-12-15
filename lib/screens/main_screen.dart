@@ -21,12 +21,25 @@ class _MainScreenState extends State<MainScreen> {
   VoidCallback? _refreshCreateNotificationScreen;
   VoidCallback? _refreshHistoryScreen;
 
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'Apps';
+      case 1:
+        return 'Create Notification';
+      case 2:
+        return 'History';
+      default:
+        return 'Fire Message';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
         leading: null,
-        title: Text('Fire Message'),
+        title: Text(_getAppBarTitle()),
         actions: [
           IconButton(
             icon: const HeroIcon(

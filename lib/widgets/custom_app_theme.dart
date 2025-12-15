@@ -35,11 +35,11 @@ class CustomAppTheme {
         labelColor: primaryCyan,
         unselectedLabelColor: darkOnSurface.withValues(alpha: 0.6),
         labelStyle: GoogleFonts.poppins(
-          fontSize: 12,
+          fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
         unselectedLabelStyle: GoogleFonts.poppins(
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: FontWeight.normal,
         ),
       ),
@@ -69,14 +69,16 @@ class CustomAppTheme {
       ),
       cardTheme: CardThemeData(
         color: darkCardSurface,
-        elevation: 12,
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: 12,
+          backgroundColor: primaryCyan,
+          foregroundColor: darkOnPrimary,
+          elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -85,7 +87,7 @@ class CustomAppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          elevation: 12,
+          elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -94,23 +96,35 @@ class CustomAppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          elevation: 12,
+          elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        elevation: 12,
+        elevation: 2,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: darkCardSurface,
-        elevation: 12,
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
       iconTheme: const IconThemeData(
         size: 18,
         color: darkOnSurface,
+      ),
+      expansionTileTheme: ExpansionTileThemeData(
+        backgroundColor: darkCardSurface,
+        collapsedBackgroundColor: darkCardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: darkOnSurface.withValues(alpha: 0.3)),
+        ),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: darkOnSurface.withValues(alpha: 0.3)),
+        ),
       ),
     );
   }
