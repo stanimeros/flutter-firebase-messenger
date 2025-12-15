@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:multiselect/multiselect.dart';
 import '../models/app_model.dart';
 import '../models/notification_model.dart';
 import '../models/topic_model.dart';
@@ -65,9 +64,21 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     final apps = await _appStorage.getApps();
     setState(() {
       _apps = apps;
-      if (apps.isNotEmpty && _selectedApp == null) {
-        _selectedApp = apps.first;
-        _loadAppData(apps.first);
+      if (apps.isNotEmpty) {
+        // If we have a selected app, find it in the new list by ID
+        if (_selectedApp != null) {
+          final matchingApp = apps.firstWhere(
+            (app) => app.id == _selectedApp!.id,
+            orElse: () => apps.first,
+          );
+          _selectedApp = matchingApp;
+          _loadAppData(matchingApp);
+        } else {
+          _selectedApp = apps.first;
+          _loadAppData(apps.first);
+        }
+      } else {
+        _selectedApp = null;
       }
     });
   }
@@ -106,6 +117,29 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     setState(() {
       _customData.remove(key);
     });
+  }
+
+  Future<void> _showSelectUsersDialog() async {
+    final Set<String> tempSelectedNames = Set.from(_selectedUserNames);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => _SelectUsersDialog(
+        users: _users,
+        selectedNames: tempSelectedNames,
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() {
+        _selectedUserNames = tempSelectedNames.toList();
+        _selectedUserIds.clear();
+        for (final name in _selectedUserNames) {
+          final user = _users.firstWhere((u) => u.name == name);
+          _selectedUserIds.add(user.id);
+        }
+      });
+    }
   }
 
   Future<void> _sendNotification() async {
@@ -380,28 +414,35 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                           });
                         } : null,
                       )
-                    else
-                      IgnorePointer(
-                        ignoring: _users.isEmpty,
-                        child: DropDownMultiSelect<String>(
-                          onChanged: (List<String> selectedNames) {
-                            setState(() {
-                              _selectedUserNames = selectedNames;
-                              // Update selected user IDs based on selected names
-                              _selectedUserIds.clear();
-                              for (final name in selectedNames) {
-                                final user = _users.firstWhere(
-                                  (u) => u.name == name,
-                                );
-                                _selectedUserIds.add(user.id);
-                              }
-                            });
-                          },
-                          options: _users.map((user) => user.name).toList(),
-                          selectedValues: _selectedUserNames,
-                          whenEmpty: 'Select Users',
-                        ),
+                    else ...[
+                      OutlinedButton.icon(
+                        onPressed: _users.isEmpty ? null : _showSelectUsersDialog,
+                        icon: const HeroIcon(HeroIcons.user),
+                        label: Text(_selectedUserNames.isEmpty 
+                            ? 'Select Users' 
+                            : '${_selectedUserNames.length} user(s) selected'),
                       ),
+                      if (_selectedUserNames.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _selectedUserNames.map((name) {
+                            return Chip(
+                              label: Text(name),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedUserNames.remove(name);
+                                  final user = _users.firstWhere((u) => u.name == name);
+                                  _selectedUserIds.remove(user.id);
+                                });
+                              },
+                              deleteIcon: const HeroIcon(HeroIcons.xMark, size: 18),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),
@@ -573,6 +614,88 @@ class _AddCustomDataDialogState extends State<_AddCustomDataDialog> {
             }
           },
           child: const Text('Add'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectUsersDialog extends StatefulWidget {
+  final List<UserModel> users;
+  final Set<String> selectedNames;
+
+  const _SelectUsersDialog({
+    required this.users,
+    required this.selectedNames,
+  });
+
+  @override
+  State<_SelectUsersDialog> createState() => _SelectUsersDialogState();
+}
+
+class _SelectUsersDialogState extends State<_SelectUsersDialog> {
+  late Set<String> _selectedNames;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedNames = Set.from(widget.selectedNames);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Select Users'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: widget.users.isEmpty
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text('No users available'),
+                ),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.users.length,
+                itemBuilder: (context, index) {
+                  final user = widget.users[index];
+                  final isSelected = _selectedNames.contains(user.name);
+
+                  return CheckboxListTile(
+                    title: Text(user.name),
+                    subtitle: Text(
+                      user.notificationToken,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    value: isSelected,
+                    onChanged: (value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedNames.add(user.name);
+                        } else {
+                          _selectedNames.remove(user.name);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            widget.selectedNames.clear();
+            widget.selectedNames.addAll(_selectedNames);
+            Navigator.pop(context, true);
+          },
+          child: const Text('Done'),
         ),
       ],
     );

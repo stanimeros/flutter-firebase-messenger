@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/main_screen.dart';
-import 'widgets/app_theme.dart';
+import 'widgets/custom_app_theme.dart';
 
 void main() {
   runApp(const MainApp());
@@ -14,7 +14,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Fire Message',
-      theme: AppTheme.darkTheme,
+      theme: CustomAppTheme.darkTheme,
       home: const MainScreen(),
     );
   }
