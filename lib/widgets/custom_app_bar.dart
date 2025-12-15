@@ -1,61 +1,53 @@
-import 'app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:heroicons/heroicons.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String? title;
-  final Widget? titleWidget;
-  final List<Widget>? actions;
-  final bool showBackButton;
-  final VoidCallback? onBackPressed;
+  final Widget title;
   final Widget? leading;
+  final bool showLeading;
+  final List<Widget>? actions;
 
   const CustomAppBar({
     super.key,
-    this.title,
-    this.titleWidget,
-    this.actions,
-    this.showBackButton = false,
-    this.onBackPressed,
     this.leading,
-  }) : assert(title == null || titleWidget == null, 'Cannot provide both title and titleWidget');
+    this.showLeading = true,
+    required this.title,
+    this.actions,
+  });
+
+  Widget? defaultLeading(BuildContext context) {
+    if (!showLeading) return null;
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    if (canPop) {
+      return IconButton(
+        icon: HeroIcon(HeroIcons.chevronLeft),
+        onPressed: () => Navigator.of(context).pop(),
+      );
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: AppTheme.darkBackground,
-      foregroundColor: Colors.white,
-      scrolledUnderElevation: 0,
-      elevation: 0,
-      leading: leading ??
-          (showBackButton
-              ? IconButton(
-                  icon: const HeroIcon(
-                    HeroIcons.arrowLeft,
-                    style: HeroIconStyle.outline,
-                    color: Colors.white,
-                  ),
-                  onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-                )
-              : SizedBox.shrink()),
-      title: titleWidget ??
-          (title != null
-              ? Text(
-                  title!,
-                  style: GoogleFonts.roboto(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                )
-              : null),
-      centerTitle: false,
-      actions: actions,
+    return Builder(
+      builder: (BuildContext context) {
+        final Widget? leading = this.leading ?? defaultLeading(context);
+
+        return AppBar(
+          title: title,
+          centerTitle: false,
+          scrolledUnderElevation: 0,
+          // backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          automaticallyImplyLeading: false,
+          leading: leading,
+          actions: actions,
+          actionsPadding: const EdgeInsets.only(right: 8),
+        );
+      },
     );
   }
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
+} 

@@ -11,8 +11,13 @@ import 'create_app_screen.dart';
 
 class AppDetailScreen extends StatefulWidget {
   final AppModel app;
+  final VoidCallback? onDataChanged;
 
-  const AppDetailScreen({super.key, required this.app});
+  const AppDetailScreen({
+    super.key,
+    required this.app,
+    this.onDataChanged,
+  });
 
   @override
   State<AppDetailScreen> createState() => _AppDetailScreenState();
@@ -67,6 +72,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Topic added successfully')),
         );
+        // Notify parent that data changed
+        widget.onDataChanged?.call();
       }
     }
   }
@@ -101,6 +108,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Topic deleted')),
         );
+        widget.onDataChanged?.call();
       }
     }
   }
@@ -127,6 +135,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User added successfully')),
         );
+        // Notify parent that data changed
+        widget.onDataChanged?.call();
       }
     }
   }
@@ -195,6 +205,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User deleted')),
         );
+        widget.onDataChanged?.call();
       }
     }
   }
@@ -209,8 +220,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: widget.app.name,
-        showBackButton: true,
+        title: Text(widget.app.name),
         actions: [
           IconButton(
             icon: const HeroIcon(
@@ -226,6 +236,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
               );
               if (result == true && context.mounted) {
                 // Reload the app data if it was updated
+                widget.onDataChanged?.call();
                 Navigator.pop(context, true);
               }
             },

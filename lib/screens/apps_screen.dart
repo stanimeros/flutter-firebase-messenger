@@ -7,7 +7,14 @@ import 'app_detail_screen.dart';
 import 'create_app_screen.dart';
 
 class AppsScreen extends StatefulWidget {
-  const AppsScreen({super.key});
+  final void Function(VoidCallback)? onRefreshCallback;
+  final VoidCallback? onDataChanged;
+
+  const AppsScreen({
+    super.key,
+    this.onRefreshCallback,
+    this.onDataChanged,
+  });
 
   @override
   State<AppsScreen> createState() => _AppsScreenState();
@@ -23,6 +30,7 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
+    widget.onRefreshCallback?.call(_loadApps);
     _loadApps();
   }
 
@@ -120,9 +128,20 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => AppDetailScreen(app: app),
+                            builder: (context) => AppDetailScreen(
+                              app: app,
+                              onDataChanged: () {
+                                _loadApps();
+                                widget.onDataChanged?.call();
+                              },
+                            ),
                           ),
-                        ).then((_) => _loadApps());
+                        ).then((result) {
+                          _loadApps();
+                          if (result == true) {
+                            widget.onDataChanged?.call();
+                          }
+                        });
                       },
                       tooltip: 'View Details',
                     ),
@@ -130,9 +149,20 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AppDetailScreen(app: app),
+                          builder: (context) => AppDetailScreen(
+                            app: app,
+                            onDataChanged: () {
+                              _loadApps();
+                              widget.onDataChanged?.call();
+                            },
+                          ),
                         ),
-                      ).then((_) => _loadApps());
+                      ).then((result) {
+                        _loadApps();
+                        if (result == true) {
+                          widget.onDataChanged?.call();
+                        }
+                      });
                     },
                   ),
                 );
@@ -148,6 +178,7 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
           );
           if (result == true) {
             _loadApps();
+            widget.onDataChanged?.call();
           }
         },
         icon: const HeroIcon(HeroIcons.plus),

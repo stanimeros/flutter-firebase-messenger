@@ -12,7 +12,14 @@ import '../services/user_storage_service.dart';
 import '../services/fcm_service.dart';
 
 class CreateNotificationScreen extends StatefulWidget {
-  const CreateNotificationScreen({super.key});
+  final void Function(VoidCallback)? onRefreshCallback;
+  final VoidCallback? onDataChanged;
+
+  const CreateNotificationScreen({
+    super.key,
+    this.onRefreshCallback,
+    this.onDataChanged,
+  });
 
   @override
   State<CreateNotificationScreen> createState() => _CreateNotificationScreenState();
@@ -41,10 +48,16 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   List<String> _selectedUserNames = [];
   bool _isLoading = false;
   final Map<String, String> _customData = {};
+  bool _useTopics = true; // true for topics, false for users
 
   @override
   void initState() {
     super.initState();
+    widget.onRefreshCallback?.call(_refresh);
+    _loadApps();
+  }
+
+  void _refresh() {
     _loadApps();
   }
 
@@ -104,9 +117,15 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       return;
     }
 
-    if (_selectedTopic == null && _selectedUserIds.isEmpty) {
+    if (_useTopics && _selectedTopic == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select either a topic or at least one user')),
+        const SnackBar(content: Text('Please select a topic')),
+      );
+      return;
+    }
+    if (!_useTopics && _selectedUserIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one user')),
       );
       return;
     }
@@ -161,11 +180,15 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           _titleController.clear();
           _bodyController.clear();
           setState(() {
-            _selectedTopic = null;
-            _selectedUserIds.clear();
-            _selectedUserNames.clear();
+            if (_useTopics) {
+              _selectedTopic = null;
+            } else {
+              _selectedUserIds.clear();
+              _selectedUserNames.clear();
+            }
             _customData.clear();
           });
+          widget.onDataChanged?.call();
         }
       }
     } catch (e) {
@@ -196,6 +219,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
+        widget.onDataChanged?.call();
       }
     } finally {
       if (mounted) {
@@ -234,40 +258,25 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    if (_apps.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Please add an app first before creating notifications',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
-                          ),
-                        ),
-                      )
-                    else
-                      DropdownButtonFormField<AppModel>(
-                        initialValue: _selectedApp,
-                        decoration: const InputDecoration(
-                          labelText: 'Choose an app',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _apps.map((app) => DropdownMenuItem<AppModel>(
-                          value: app,
-                          child: Text(app.name),
-                        )).toList(),
-                        onChanged: (app) {
-                          if (app != null) {
-                            _loadAppData(app);
-                            setState(() {
-                              _selectedApp = app;
-                            });
-                          }
-                        },
+                    DropdownButtonFormField<AppModel>(
+                      initialValue: _selectedApp,
+                      decoration: const InputDecoration(
+                        labelText: 'Choose an app',
+                        border: OutlineInputBorder(),
                       ),
+                      items: _apps.map((app) => DropdownMenuItem<AppModel>(
+                        value: app,
+                        child: Text(app.name),
+                      )).toList(),
+                      onChanged: _apps.isNotEmpty ? (app) {
+                        if (app != null) {
+                          _loadAppData(app);
+                          setState(() {
+                            _selectedApp = app;
+                          });
+                        }
+                      } : null,
+                    ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
@@ -301,64 +310,98 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         return null;
                       },
                     ),
-                    if (_selectedApp != null) ...[
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<TopicModel?>(
-                        initialValue: _selectedTopic,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Topic (Optional)',
-                          border: OutlineInputBorder(),
-                          helperText: 'Select a topic or select users below',
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text(
+                          'Send to:',
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        items: [
-                          const DropdownMenuItem<TopicModel?>(
-                            value: null,
-                            child: Text('None'),
-                          ),
-                          ..._topics.map((topic) => DropdownMenuItem<TopicModel?>(
-                            value: topic,
-                            child: Text(topic.name),
-                          )),
-                        ],
-                        onChanged: _topics.isNotEmpty ? (topic) {
-                          setState(() {
-                            _selectedTopic = topic;
-                            if (topic != null) {
-                              _selectedUserIds.clear();
-                              _selectedUserNames.clear();
-                            }
-                          });
-                        } : null,
-                      ),
-                      const SizedBox(height: 16),
-                      Opacity(
-                        opacity: _users.isEmpty ? 0.5 : 1.0,
-                        child: IgnorePointer(
-                          ignoring: _users.isEmpty,
-                          child: DropDownMultiSelect<String>(
-                            onChanged: (List<String> selectedNames) {
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ToggleButtons(
+                            isSelected: [_useTopics, !_useTopics],
+                            onPressed: (index) {
                               setState(() {
-                                _selectedUserNames = selectedNames;
-                                // Update selected user IDs based on selected names
-                                _selectedUserIds.clear();
-                                for (final name in selectedNames) {
-                                  final user = _users.firstWhere(
-                                    (u) => u.name == name,
-                                  );
-                                  _selectedUserIds.add(user.id);
-                                }
-                                if (selectedNames.isNotEmpty) {
+                                _useTopics = index == 0;
+                                // Clear the other selection when switching
+                                if (_useTopics) {
+                                  _selectedUserIds.clear();
+                                  _selectedUserNames.clear();
+                                } else {
                                   _selectedTopic = null;
                                 }
                               });
                             },
-                            options: _users.map((user) => user.name).toList(),
-                            selectedValues: _selectedUserNames,
-                            whenEmpty: _users.isEmpty ? 'No users available' : 'Select Users (Optional)',
+                            borderRadius: BorderRadius.circular(8),
+                            children: const [
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    HeroIcon(HeroIcons.hashtag, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Topics'),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    HeroIcon(HeroIcons.user, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Users'),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (_useTopics)
+                      DropdownButtonFormField<TopicModel?>(
+                        initialValue: _selectedTopic,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Topic',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _topics.map((topic) => DropdownMenuItem<TopicModel?>(
+                          value: topic,
+                          child: Text(topic.name),
+                        )).toList(),
+                        onChanged: _topics.isNotEmpty ? (topic) {
+                          setState(() {
+                            _selectedTopic = topic;
+                          });
+                        } : null,
+                      )
+                    else
+                      IgnorePointer(
+                        ignoring: _users.isEmpty,
+                        child: DropDownMultiSelect<String>(
+                          onChanged: (List<String> selectedNames) {
+                            setState(() {
+                              _selectedUserNames = selectedNames;
+                              // Update selected user IDs based on selected names
+                              _selectedUserIds.clear();
+                              for (final name in selectedNames) {
+                                final user = _users.firstWhere(
+                                  (u) => u.name == name,
+                                );
+                                _selectedUserIds.add(user.id);
+                              }
+                            });
+                          },
+                          options: _users.map((user) => user.name).toList(),
+                          selectedValues: _selectedUserNames,
+                          whenEmpty: 'Select Users',
+                        ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -397,25 +440,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                               ),
                             ),
                           )),
-                    ] else ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'No custom data added',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ]
                   ],
                 ),
               ),

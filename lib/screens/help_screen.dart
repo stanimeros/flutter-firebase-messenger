@@ -48,8 +48,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Help & Documentation',
-        showBackButton: true,
+        title: Text('Help & Documentation'),
       ),
       body: Column(
         children: [

@@ -15,19 +15,18 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  int? _previousIndex;
 
-  final List<Widget> _screens = const [
-    AppsScreen(),
-    CreateNotificationScreen(),
-    HistoryScreen(),
-  ];
+  VoidCallback? _refreshAppsScreen;
+  VoidCallback? _refreshCreateNotificationScreen;
+  VoidCallback? _refreshHistoryScreen;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
         leading: null,
-        title: 'Fire Message',
+        title: Text('Fire Message'),
         actions: [
           IconButton(
             icon: const HeroIcon(
@@ -48,12 +47,30 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: [
+          AppsScreen(
+            onRefreshCallback: (callback) => _refreshAppsScreen = callback,
+            onDataChanged: _refreshAllScreens,
+          ),
+          CreateNotificationScreen(
+            onRefreshCallback: (callback) => _refreshCreateNotificationScreen = callback,
+            onDataChanged: _refreshAllScreens,
+          ),
+          HistoryScreen(
+            onRefreshCallback: (callback) => _refreshHistoryScreen = callback,
+            onDataChanged: _refreshAllScreens,
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          // Refresh the screen when switching to it
+          if (_previousIndex != index) {
+            _refreshScreen(index);
+          }
           setState(() {
+            _previousIndex = _currentIndex;
             _currentIndex = index;
           });
         },
@@ -74,6 +91,27 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
+  }
+
+  void _refreshScreen(int index) {
+    switch (index) {
+      case 0:
+        _refreshAppsScreen?.call();
+        break;
+      case 1:
+        _refreshCreateNotificationScreen?.call();
+        break;
+      case 2:
+        _refreshHistoryScreen?.call();
+        break;
+    }
+  }
+
+  // Public method to refresh screens when data changes
+  void _refreshAllScreens() {
+    _refreshAppsScreen?.call();
+    _refreshCreateNotificationScreen?.call();
+    _refreshHistoryScreen?.call();
   }
 }
 

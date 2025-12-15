@@ -6,7 +6,14 @@ import '../models/app_model.dart';
 import '../services/notification_storage_service.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final void Function(VoidCallback)? onRefreshCallback;
+  final VoidCallback? onDataChanged;
+
+  const HistoryScreen({
+    super.key,
+    this.onRefreshCallback,
+    this.onDataChanged,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -22,6 +29,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
   @override
   void initState() {
     super.initState();
+    widget.onRefreshCallback?.call(_loadNotifications);
     _loadNotifications();
   }
 
