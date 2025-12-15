@@ -32,16 +32,40 @@ else
 fi
 echo ""
 
-# iOS Simulator Cleanup
-echo "📱 Cleaning iOS Simulators..."
-if command -v xcrun &> /dev/null; then
-    xcrun simctl shutdown all 2>/dev/null || true
-    echo "  ✓ Shut down all simulators"
-    xcrun simctl erase all 2>/dev/null || true
-    echo "  ✓ Erased all simulators"
-    echo "✅ Simulator cleanup complete"
+# iOS Cleanup
+echo "🧹 Cleaning iOS dependencies..."
+if [ -d "ios" ]; then
+    # Remove .symlinks
+    if [ -L "ios/.symlinks" ] || [ -d "ios/.symlinks" ]; then
+        rm -rf ios/.symlinks
+        echo "  ✓ Removed ios/.symlinks"
+    fi
+    
+    # Remove Pods
+    if [ -d "ios/Pods" ]; then
+        rm -rf ios/Pods
+        echo "  ✓ Removed ios/Pods"
+    fi
+    
+    # Remove Podfile.lock
+    if [ -f "ios/Podfile.lock" ]; then
+        rm -f ios/Podfile.lock
+        echo "  ✓ Removed ios/Podfile.lock"
+    fi
+    
+    echo "✅ iOS cleanup complete"
 else
-    echo "⚠️  xcrun not found, skipping simulator cleanup..."
+    echo "⚠️  ios/ directory not found, skipping iOS cleanup..."
+fi
+echo ""
+
+# Pod repo update
+echo "📚 Updating CocoaPods repository..."
+if command -v pod &> /dev/null; then
+    pod repo update
+    echo "✅ Pod repo updated"
+else
+    echo "⚠️  CocoaPods not found, skipping..."
 fi
 echo ""
 
@@ -51,40 +75,10 @@ flutter clean
 echo "✅ Flutter clean complete"
 echo ""
 
-# iOS CocoaPods Cleanup
-echo "🧹 Cleaning iOS CocoaPods dependencies..."
-if [ -d "ios" ]; then
-    rm -rf ios/Pods ios/.symlinks ios/Flutter/Flutter.framework
-    echo "  ✓ Removed ios/Pods, ios/.symlinks, and ios/Flutter/Flutter.framework"
-    echo "✅ iOS cleanup complete"
-else
-    echo "⚠️  ios/ directory not found, skipping iOS cleanup..."
-fi
-echo ""
-
-# Flutter pub get (must run before pod install to generate Generated.xcconfig)
+# Flutter pub get
 echo "📥 Running flutter pub get..."
 flutter pub get
 echo "✅ Dependencies installed"
-echo ""
-
-# Pod repo update and install
-echo "📚 Updating and installing CocoaPods dependencies..."
-if command -v pod &> /dev/null && [ -d "ios" ]; then
-    pod repo update
-    echo "  ✓ Pod repo updated"
-    cd ios && pod install
-    echo "  ✓ Pods installed"
-    cd ..
-    echo "✅ CocoaPods setup complete"
-else
-    if command -v pod &> /dev/null; then
-        pod repo update
-        echo "✅ Pod repo updated"
-    else
-        echo "⚠️  CocoaPods not found, skipping..."
-    fi
-fi
 echo ""
 
 echo "======================================"

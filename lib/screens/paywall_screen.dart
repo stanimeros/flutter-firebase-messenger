@@ -17,7 +17,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isRestoring = false;
   Offerings? _offerings;
   Package? _selectedPackage;
-
+  IntroEligibility? _introlEligibility;
   @override
   void initState() {
     super.initState();
@@ -31,12 +31,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       final offerings = await PurchasesService.getOfferings();
+      
+      Package? selectedPackage;
+      if (offerings?.current != null && offerings!.current!.availablePackages.isNotEmpty) {
+        selectedPackage = offerings.current!.availablePackages.first;
+      }
+
+      final eligibilityMap = await Purchases.checkTrialOrIntroductoryPriceEligibility(
+        [selectedPackage?.storeProduct.identifier ?? ''],
+      );
+
+      final eligibility = eligibilityMap[selectedPackage?.storeProduct.identifier ?? ''];
+      
       setState(() {
         _offerings = offerings;
-        // Select the first available package by default
-        if (offerings?.current != null && offerings!.current!.availablePackages.isNotEmpty) {
-          _selectedPackage = offerings.current!.availablePackages.first;
-        }
+        _selectedPackage = selectedPackage;
+        _introlEligibility = eligibility;
         _isLoading = false;
       });
     } catch (e) {
@@ -257,7 +267,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
                     // Features list
                     _buildFeatureItem(
                       icon: HeroIcons.sparkles,
@@ -278,7 +288,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       icon: HeroIcons.chartBar,
                       text: 'Analytics & insights',
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
                     // Subscription packages
                     if (_offerings?.current != null &&
                         _offerings!.current!.availablePackages.isNotEmpty)
@@ -289,6 +299,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           child: _buildPackageCard(
                             package: package,
                             isSelected: isSelected,
+                            introEligibility: _introlEligibility,
                             onTap: () {
                               setState(() {
                                 _selectedPackage = package;
@@ -391,8 +402,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Widget _buildPackageCard({
     required Package package,
     required bool isSelected,
+    required IntroEligibility? introEligibility,
     required VoidCallback onTap,
   }) {
+    final days = package.storeProduct.introductoryPrice?.periodNumberOfUnits ?? 0;
+    final unit = package.storeProduct.introductoryPrice?.periodUnit.name ?? 'day';
+    final trialText = '$days $unit trial';
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -455,12 +470,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ],
               ),
             ),
-            Text(
-              package.storeProduct.priceString,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: CustomAppTheme.primaryCyan,
-                    fontWeight: FontWeight.bold,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  package.storeProduct.priceString,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: CustomAppTheme.primaryCyan,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                if (introEligibility?.status == IntroEligibilityStatus.introEligibilityStatusEligible) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    trialText,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: CustomAppTheme.primaryCyan,
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
+                ],
+              ],
             ),
           ],
         ),
