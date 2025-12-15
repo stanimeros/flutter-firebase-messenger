@@ -8,17 +8,6 @@ class FCMService {
   final _secureStorage = SecureStorageService();
   static const _fcmScope = 'https://www.googleapis.com/auth/firebase.messaging';
 
-  Future<Map<String, dynamic>> _getServiceAccountData(String appId) async {
-    // Get GoogleKeyModel from secure storage
-    final serviceAccount = await _secureStorage.getAppCredentials(appId);
-    
-    if (serviceAccount == null) {
-      throw Exception('JSON credentials not found. Please update the app and select the JSON file again.');
-    }
-    
-    return serviceAccount;
-  }
-
   Future<String> _getAccessToken(String appId) async {
     try {
       // Get Google key model from secure storage
@@ -34,8 +23,7 @@ class FCMService {
       }
       
       // Create service account credentials from JSON string
-      final jsonContent = serviceAccount.toString();
-      final credentials = ServiceAccountCredentials.fromJson(jsonContent);
+      final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
       
       // Obtain authenticated client using clientViaServiceAccount
       final client = await clientViaServiceAccount(
@@ -69,12 +57,12 @@ class FCMService {
     List<String>? tokens,
   }) async {
     try {
-      // Get service account data to extract project_id
-      final serviceAccount = await _getServiceAccountData(app.id);
-      final projectId = serviceAccount['project_id'];
-      
       // Get OAuth 2.0 access token
       final accessToken = await _getAccessToken(app.id);
+
+      // Get service account data to extract project_id
+      final serviceAccount = await _secureStorage.getAppCredentials(app.id);
+      final projectId = serviceAccount?['project_id'];
       
       // Use FCM HTTP v1 API endpoint
       final url = Uri.parse('https://fcm.googleapis.com/v1/projects/$projectId/messages:send');

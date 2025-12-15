@@ -27,7 +27,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         leading: null,
-        title: 'Firebase Messenger',
+        title: 'Fire Message',
         actions: [
           IconButton(
             icon: const HeroIcon(

@@ -305,7 +305,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
     }
     
     // Save JSON content to secure storage using the model
-    await _secureStorage.saveAppCredentials(appId, serviceAccount.toString());
+    await _secureStorage.saveAppCredentials(appId, serviceAccount);
     
     // Save test token users with correct appId
     for (var user in _testTokenUsers) {
