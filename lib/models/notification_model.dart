@@ -1,4 +1,4 @@
-import 'package:firebase_messenger/models/app_model.dart';
+import 'package:fire_message/models/app_model.dart';
 
 class NotificationModel {
   final String id;

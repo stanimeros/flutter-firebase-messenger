@@ -392,7 +392,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                 title: Text(user.name),
                 subtitle: Text(
                   user.notificationToken,
-                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
@@ -523,7 +522,6 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                   }
                   return null;
                 },
-                maxLines: 3,
               ),
             ],
           ),
