@@ -220,12 +220,13 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: const SizedBox.shrink(),
+        title: Text(widget.app.name),
         actions: [
           IconButton(
             icon: const HeroIcon(
               HeroIcons.pencil,
               color: Colors.white,
+              size: 18,
             ),
             onPressed: () async {
               final result = await Navigator.push(
@@ -243,9 +244,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
             tooltip: 'Edit App',
           ),
           IconButton(
-            icon: const HeroIcon(
+            icon: HeroIcon(
               HeroIcons.trash,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.error,
+              size: 18,
             ),
             onPressed: _deleteApp,
             tooltip: 'Delete App',
@@ -300,102 +302,102 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   }
 
   Widget _buildTopicsTab() {
+    if (_topics.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HeroIcon(
+                HeroIcons.inbox,
+                size: 48,
+                style: HeroIconStyle.outline,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No topics added yet',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_topics.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    HeroIcon(
-                      HeroIcons.inbox,
-                      size: 48,
-                      style: HeroIconStyle.outline,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No topics added yet',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey,
-                          ),
-                    ),
-                  ],
+        children: _topics.map((topic) => Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  child: HeroIcon(HeroIcons.hashtag),
+                ),
+                title: Text(topic.name),
+                trailing: IconButton(
+                  icon: const HeroIcon(HeroIcons.trash),
+                  onPressed: () => _deleteTopic(topic),
                 ),
               ),
-            )
-          else
-            ..._topics.map((topic) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      child: HeroIcon(HeroIcons.hashtag),
-                    ),
-                    title: Text(topic.name),
-                    trailing: IconButton(
-                      icon: const HeroIcon(HeroIcons.trash),
-                      onPressed: () => _deleteTopic(topic),
-                    ),
-                  ),
-                )),
-        ],
+            )).toList(),
       ),
     );
   }
 
   Widget _buildUsersTab() {
+    if (_users.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HeroIcon(
+                HeroIcons.inbox,
+                size: 48,
+                style: HeroIconStyle.outline,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No users added yet',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_users.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    HeroIcon(
-                      HeroIcons.inbox,
-                      size: 48,
-                      style: HeroIconStyle.outline,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No users added yet',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey,
-                          ),
-                    ),
-                  ],
+        children: _users.map((user) => Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  child: HeroIcon(HeroIcons.user),
+                ),
+                title: Text(user.name),
+                subtitle: Text(
+                  user.notificationToken,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: IconButton(
+                  icon: const HeroIcon(HeroIcons.trash),
+                  onPressed: () => _deleteUser(user),
                 ),
               ),
-            )
-          else
-            ..._users.map((user) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      child: HeroIcon(HeroIcons.user),
-                    ),
-                    title: Text(user.name),
-                    subtitle: Text(
-                      user.notificationToken,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: IconButton(
-                      icon: const HeroIcon(HeroIcons.trash),
-                      onPressed: () => _deleteUser(user),
-                    ),
-                  ),
-                )),
-        ],
+            )).toList(),
       ),
     );
   }

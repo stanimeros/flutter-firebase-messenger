@@ -101,8 +101,8 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Widget _buildLogoPreview() {
     final theme = Theme.of(context);
     final emptyPlaceholder = Container(
-      width: 100,
-      height: 100,
+      width: double.infinity,
+      height: 200,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
@@ -129,8 +129,8 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
         borderRadius: BorderRadius.circular(8),
         child: Image.memory(
           imageBytes,
-          width: 100,
-          height: 100,
+          width: double.infinity,
+          height: 200,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return emptyPlaceholder;
@@ -232,7 +232,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: const SizedBox.shrink(),
+        title: Text(widget.app == null ? 'Create App' : 'Edit App'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
@@ -247,36 +247,29 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'App Information',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
                       // Logo picker
-                      Center(
-                        child: GestureDetector(
-                          onTap: _pickLogoFile,
-                          child: Stack(
-                            children: [
-                              _buildLogoPreview(),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  padding: const EdgeInsets.all(6),
-                                  child: const HeroIcon(
-                                    HeroIcons.camera,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
+                      GestureDetector(
+                        onTap: _pickLogoFile,
+                        child: Stack(
+                          children: [
+                            _buildLogoPreview(),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: const HeroIcon(
+                                  HeroIcons.camera,
+                                  size: 16,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 12),

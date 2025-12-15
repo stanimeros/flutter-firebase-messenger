@@ -127,19 +127,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       return;
     }
 
-    if (_useTopics && _selectedTopic == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a topic')),
-      );
-      return;
-    }
-    if (!_useTopics && _selectedUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a user')),
-      );
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
@@ -311,7 +298,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         Expanded(
                           child: ToggleButtons(
                             isSelected: [_useTopics, !_useTopics],
-                            constraints: BoxConstraints(minWidth: (MediaQuery.of(context).size.width - 59) / 2),
+                            constraints: BoxConstraints(minWidth: (MediaQuery.of(context).size.width - 64) / 2),
                             onPressed: (index) {
                               setState(() {
                                 _useTopics = index == 0;
@@ -369,6 +356,12 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                             _selectedTopic = topic;
                           });
                         } : null,
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Please select a topic';
+                          }
+                          return null;
+                        },
                       )
                     else
                       DropdownButtonFormField<UserModel?>(
@@ -386,12 +379,18 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                             _selectedUser = user;
                           });
                         } : null,
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Please select a user';
+                          }
+                          return null;
+                        },
                       ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -414,25 +413,39 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                     ),
                     if (_customData.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      ..._customData.entries.map((entry) => Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(entry.key),
-                              subtitle: Text(entry.value),
-                              trailing: IconButton(
-                                icon: const HeroIcon(HeroIcons.xMark),
-                                onPressed: () => _removeCustomData(entry.key),
+                      ..._customData.entries.map((entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: ListTile(
+                                title: Text(entry.key),
+                                subtitle: Text(entry.value),
+                                trailing: IconButton(
+                                  icon: const HeroIcon(HeroIcons.xMark),
+                                  onPressed: () => _removeCustomData(entry.key),
+                                ),
                               ),
                             ),
-                          )),
+                      )),
                     ]
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             ElevatedButton(
-              onPressed: (_selectedApp != null && !_isLoading) ? _sendNotification : null,
+              onPressed: (_selectedApp != null && 
+                         !_isLoading && 
+                         ((_useTopics && _selectedTopic != null) || (!_useTopics && _selectedUser != null))) 
+                  ? _sendNotification 
+                  : null,
               child: _isLoading
                   ? const SizedBox(
                       height: 20,

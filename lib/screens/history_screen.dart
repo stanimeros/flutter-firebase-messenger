@@ -103,12 +103,10 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                     ],
                   ),
                 )
-              : RefreshIndicator(
-                  onRefresh: _loadNotifications,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _notifications.length,
-                    itemBuilder: (context, index) {
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _notifications.length,
+                  itemBuilder: (context, index) {
                       final notification = _notifications[index];
                       return Dismissible(
                         key: Key(notification.id),
@@ -123,14 +121,17 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                           child: const HeroIcon(
                             HeroIcons.trash,
                             color: Colors.white,
-                            size: 32,
+                            size: 20,
                           ),
                         ),
                         confirmDismiss: (direction) async {
-                          return await _deleteNotification(notification);
+                          final deleted = await _deleteNotification(notification);
+                          if (deleted) {
+                            widget.onDataChanged?.call();
+                          }
+                          return deleted;
                         },
                         child: Card(
-                          margin: const EdgeInsets.only(bottom: 8),
                           child: ExpansionTile(
                             leading: _buildAppImage(notification.app),
                             title: Text(notification.title),
@@ -162,47 +163,53 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                                     ],
                                     if (notification.data != null && notification.data!.isNotEmpty) ...[
                                       const SizedBox(height: 8),
-                                      Card(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.surface,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.all(12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                HeroIcon(HeroIcons.codeBracket, size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Custom Data',
+                                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ...notification.data!.entries.map((entry) => Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4),
+                                              child: Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  HeroIcon(HeroIcons.codeBracket, size: 18),
-                                                  const SizedBox(width: 8),
                                                   Text(
-                                                    'Custom Data',
-                                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                      fontWeight: FontWeight.bold,
+                                                    '${entry.key}: ',
+                                                    style: const TextStyle(fontWeight: FontWeight.w500),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      entry.value.toString(),
+                                                      style: TextStyle(
+                                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 8),
-                                              ...notification.data!.entries.map((entry) => Padding(
-                                                padding: const EdgeInsets.only(bottom: 4),
-                                                child: Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      '${entry.key}: ',
-                                                      style: const TextStyle(fontWeight: FontWeight.w500),
-                                                    ),
-                                                    Expanded(
-                                                      child: Text(
-                                                        entry.value.toString(),
-                                                        style: TextStyle(
-                                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              )),
-                                            ],
-                                          ),
+                                            )),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -247,20 +254,6 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                                         ),
                                       ),
                                     ],
-                                    const SizedBox(height: 12),
-                                    OutlinedButton.icon(
-                                      onPressed: () => _deleteNotification(notification).then((deleted) {
-                                        if (deleted) {
-                                          widget.onDataChanged?.call();
-                                        }
-                                      }),
-                                      icon: const HeroIcon(HeroIcons.trash),
-                                      label: const Text('Delete Notification'),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Theme.of(context).colorScheme.error,
-                                        side: BorderSide(color: Theme.of(context).colorScheme.error),
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -270,43 +263,48 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                       );
                     },
                   ),
-                ),
         ),
       ],
     );
   }
 
   Widget _buildInfoCard(String label, String value, {required HeroIcons icon}) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            HeroIcon(icon, size: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+          width: 1,
         ),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          HeroIcon(icon, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

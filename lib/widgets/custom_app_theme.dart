@@ -70,6 +70,7 @@ class CustomAppTheme {
       cardTheme: CardThemeData(
         color: darkCardSurface,
         elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: 6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
