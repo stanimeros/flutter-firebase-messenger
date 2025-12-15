@@ -55,8 +55,28 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
           TabBar(
             controller: _tabController,
             tabs: const [
-              Tab(icon: HeroIcon(HeroIcons.informationCircle), text: 'App Guide'),
-              Tab(icon: HeroIcon(HeroIcons.bookOpen), text: 'FCM Docs'),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.informationCircle, size: 18),
+                    SizedBox(width: 6),
+                    Text('App Guide'),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.bookOpen, size: 18),
+                    SizedBox(width: 6),
+                    Text('FCM Docs'),
+                  ],
+                ),
+              ),
             ],
           ),
           Expanded(

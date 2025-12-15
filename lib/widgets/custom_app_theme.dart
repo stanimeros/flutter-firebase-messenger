@@ -9,8 +9,8 @@ class CustomAppTheme {
   
   // Dark theme colors
   static const Color darkBackground = Color(0xFF121212); // Neutral dark
-  static const Color darkSurface = Color(0xFF1E1E1E);
-  static const Color darkSurfaceVariant = Color(0xFF2C2C2C);
+  static const Color darkSurface = Color.fromARGB(255, 20, 20, 20);
+  static const Color darkCardSurface = Color.fromARGB(255, 29, 29, 29);
   static const Color darkOnSurface = Color(0xFFE0E0E0);
   static const Color darkOnPrimary = Color(0xFF000000);
   static const Color darkError = Color(0xFFEF4444);
@@ -22,12 +22,95 @@ class CustomAppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryCyan,
         brightness: Brightness.dark,
+      ).copyWith(
+        surface: darkSurface,
       ),
       scaffoldBackgroundColor: darkBackground,
       appBarTheme: AppBarTheme(
         elevation: 0,
         backgroundColor: darkSurface,
         foregroundColor: darkOnSurface,
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: primaryCyan,
+        unselectedLabelColor: darkOnSurface.withValues(alpha: 0.6),
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: darkOnSurface.withValues(alpha: 0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: darkOnSurface.withValues(alpha: 0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryCyan, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: darkError),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: darkError, width: 2),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: darkCardSurface,
+        elevation: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 12,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          elevation: 12,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          elevation: 12,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 12,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: darkCardSurface,
+        elevation: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      iconTheme: const IconThemeData(
+        size: 18,
+        color: darkOnSurface,
       ),
     );
   }

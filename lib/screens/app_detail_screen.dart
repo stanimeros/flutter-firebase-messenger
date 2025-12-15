@@ -257,8 +257,28 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
           TabBar(
             controller: _tabController,
             tabs: const [
-              Tab(icon: HeroIcon(HeroIcons.hashtag), text: 'Topics'),
-              Tab(icon: HeroIcon(HeroIcons.user), text: 'Users'),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.hashtag, size: 18),
+                    SizedBox(width: 6),
+                    Text('Topics'),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.user, size: 18),
+                    SizedBox(width: 6),
+                    Text('Users'),
+                  ],
+                ),
+              ),
             ],
           ),
           Expanded(
@@ -285,11 +305,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Topics',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
           if (_topics.isEmpty)
             Card(
               child: Padding(
@@ -338,11 +353,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Users',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
           if (_users.isEmpty)
             Card(
               child: Padding(
