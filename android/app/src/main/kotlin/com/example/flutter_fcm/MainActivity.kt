@@ -1,4 +1,4 @@
-package com.stanimeros.fcm
+package com.stanimeros.firemessage
 
 import io.flutter.embedding.android.FlutterActivity
 
