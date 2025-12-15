@@ -209,6 +209,8 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       packageName: _packageController.text.trim(),
       imageData: _selectedLogoImageData,
       createdAt: widget.app?.createdAt ?? DateTime.now(),
+      topics: widget.app?.topics ?? [],
+      users: widget.app?.users ?? [],
     );
 
     await _appStorage.saveApp(app);
@@ -250,27 +252,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                       // Logo picker
                       GestureDetector(
                         onTap: _pickLogoFile,
-                        child: Stack(
-                          children: [
-                            _buildLogoPreview(),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(6),
-                                child: const HeroIcon(
-                                  HeroIcons.camera,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: _buildLogoPreview(),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(

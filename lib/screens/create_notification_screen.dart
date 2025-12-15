@@ -6,8 +6,6 @@ import '../models/topic_model.dart';
 import '../models/user_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
-import '../services/topic_storage_service.dart';
-import '../services/user_storage_service.dart';
 import '../services/fcm_service.dart';
 
 class CreateNotificationScreen extends StatefulWidget {
@@ -34,8 +32,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
 
   final _appStorage = AppStorageService();
   final _notificationStorage = NotificationStorageService();
-  final _topicStorage = TopicStorageService();
-  final _userStorage = UserStorageService();
   final _fcmService = FCMService();
 
   List<AppModel> _apps = [];
@@ -83,14 +79,23 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   }
 
   Future<void> _loadAppData(AppModel app) async {
-    final topics = await _topicStorage.getTopics(app.id);
-    final users = await _userStorage.getUsers(app.id);
-    setState(() {
-      _topics = topics;
-      _users = users;
-      _selectedTopic = null;
-      _selectedUser = null;
-    });
+    // Reload app to get latest topics and users
+    final updatedApp = await _appStorage.getAppById(app.id);
+    if (updatedApp != null) {
+      setState(() {
+        _topics = updatedApp.topics;
+        _users = updatedApp.users;
+        _selectedTopic = null;
+        _selectedUser = null;
+      });
+    } else {
+      setState(() {
+        _topics = app.topics;
+        _users = app.users;
+        _selectedTopic = null;
+        _selectedUser = null;
+      });
+    }
   }
 
   Future<void> _showAddCustomDataDialog() async {

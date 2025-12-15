@@ -4,8 +4,6 @@ import '../models/app_model.dart';
 import '../models/topic_model.dart';
 import '../models/user_model.dart';
 import '../services/app_storage_service.dart';
-import '../services/topic_storage_service.dart';
-import '../services/user_storage_service.dart';
 import '../widgets/custom_app_bar.dart';
 import 'create_app_screen.dart';
 
@@ -26,15 +24,17 @@ class AppDetailScreen extends StatefulWidget {
 class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _appStorage = AppStorageService();
-  final _topicStorage = TopicStorageService();
-  final _userStorage = UserStorageService();
   
+  late AppModel _currentApp;
   List<TopicModel> _topics = [];
   List<UserModel> _users = [];
 
   @override
   void initState() {
     super.initState();
+    _currentApp = widget.app;
+    _topics = widget.app.topics;
+    _users = widget.app.users;
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       setState(() {}); // Rebuild when tab changes to update FAB
@@ -43,12 +43,14 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   }
 
   Future<void> _loadData() async {
-    final topics = await _topicStorage.getTopics(widget.app.id);
-    final users = await _userStorage.getUsers(widget.app.id);
-    setState(() {
-      _topics = topics;
-      _users = users;
-    });
+    final app = await _appStorage.getAppById(_currentApp.id);
+    if (app != null) {
+      setState(() {
+        _currentApp = app;
+        _topics = app.topics;
+        _users = app.users;
+      });
+    }
   }
 
   Future<void> _showAddTopicDialog() async {
@@ -60,12 +62,11 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     if (result != null && result.isNotEmpty) {
       final topic = TopicModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        appId: widget.app.id,
         name: result,
         createdAt: DateTime.now(),
       );
 
-      await _topicStorage.saveTopic(topic);
+      await _appStorage.addTopic(_currentApp.id, topic);
       _loadData();
 
       if (mounted) {
@@ -102,7 +103,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     );
 
     if (confirm == true) {
-      await _topicStorage.deleteTopic(topic.id);
+      await _appStorage.deleteTopic(_currentApp.id, topic.id);
       _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -122,13 +123,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     if (result != null && result.containsKey('name') && result.containsKey('token')) {
       final user = UserModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        appId: widget.app.id,
         name: result['name']!,
         notificationToken: result['token']!,
         createdAt: DateTime.now(),
       );
 
-      await _userStorage.saveUser(user);
+      await _appStorage.addUser(_currentApp.id, user);
       _loadData();
 
       if (mounted) {
@@ -165,7 +165,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     );
 
     if (confirm == true) {
-      await _appStorage.deleteApp(widget.app.id);
+      await _appStorage.deleteApp(_currentApp.id);
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -199,7 +199,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     );
 
     if (confirm == true) {
-      await _userStorage.deleteUser(user.id);
+      await _appStorage.deleteUser(_currentApp.id, user.id);
       _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -232,13 +232,16 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreateAppScreen(app: widget.app),
+                  builder: (context) => CreateAppScreen(app: _currentApp),
                 ),
               );
               if (result == true && context.mounted) {
                 // Reload the app data if it was updated
+                await _loadData();
                 widget.onDataChanged?.call();
-                Navigator.pop(context, true);
+                if (context.mounted) {
+                  Navigator.pop(context, true);
+                }
               }
             },
             tooltip: 'Edit App',

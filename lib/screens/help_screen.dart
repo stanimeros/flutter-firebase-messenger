@@ -48,7 +48,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: const SizedBox.shrink(),
+        title: Text('Help'), 
       ),
       body: Column(
         children: [
@@ -132,10 +132,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• App Name: Enter a descriptive name for your mobile app\n'
+                    '• App Name: Enter a descriptive name\n'
                     '• Package Name: Enter the package name (e.g., com.example.app)\n'
-                    '• Logo: Optionally select an image file for your app logo\n'
-                    '• JSON File: Select your Firebase service account JSON file (required). For the JSON file, ask your developer to create a key through a service account with Firebase Cloud Messaging Admin API as role.',
+                    '• Logo: Optionally select an image file\n'
+                    '• JSON File: Select your Firebase service account JSON file (required)',
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -144,7 +144,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Tap "Save App" to store your app configuration. The JSON file will be securely saved on your device.',
+                    'Tap "Save App" to store your app configuration. The JSON file is securely encrypted on your device.',
                   ),
                 ],
               ),
@@ -183,7 +183,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'In the Topics tab, enter a topic name and tap "Add Topic". Topics allow you to send messages to groups of devices that have subscribed to that topic.',
+                    'In the Topics tab, tap the + button and enter a topic name. Topics allow you to send messages to groups of devices subscribed to that topic.',
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -192,7 +192,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'In the Users tab, enter a user name and their FCM device token, then tap "Add User". Users represent individual devices that can receive notifications.',
+                    'In the Users tab, tap the + button and enter a user name with their FCM device token. Users represent individual devices that can receive notifications.',
                   ),
                 ],
               ),
@@ -222,7 +222,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Navigate to the Create tab and select an app from the dropdown. All fields will be enabled once an app is selected.',
+                    'Navigate to the Create tab and select an app from the dropdown.',
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -241,10 +241,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Select either:\n'
-                    '• A Topic: Send to all devices subscribed to that topic\n'
-                    '• One or more Users: Send to specific devices by selecting users\n'
-                    'Note: You can only select either a topic OR users, not both.',
+                    'Toggle between Topics or Users, then select:\n'
+                    '• One Topic: Send to all devices subscribed to that topic\n'
+                    '• One User: Send to a specific device\n'
+                    'Note: You must select either a topic OR a user (required).',
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -253,7 +253,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Add custom key-value pairs that will be sent with the notification. This data can be used by your app to perform custom actions.',
+                    'Add custom key-value pairs that will be sent with the notification.',
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -287,21 +287,17 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'The History tab shows all notifications you\'ve sent, including:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
+                    'The History tab shows all notifications you\'ve sent. Expand any notification to see:\n'
                     '• Sent status (success or failed)\n'
                     '• App name and details\n'
                     '• Notification content\n'
-                    '• Recipients (topic or users)\n'
+                    '• Recipients (topic or user)\n'
                     '• Timestamp\n'
                     '• Error messages (if any)',
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'You can expand each notification to see full details, delete individual notifications, or clear all history.',
+                    'Swipe left on any notification to delete it.',
                   ),
                 ],
               ),
@@ -326,9 +322,8 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    '• Firebase service account JSON files are stored securely on your device\n'
+                    '• Firebase service account JSON files are encrypted and stored securely\n'
                     '• Never share your service account credentials\n'
-                    '• Keep your device secure to protect stored credentials\n'
                     '• Device tokens should be kept private',
                   ),
                 ],

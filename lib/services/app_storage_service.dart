@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_model.dart';
+import '../models/topic_model.dart';
+import '../models/user_model.dart';
 import 'secure_storage_service.dart';
 
 class AppStorageService {
@@ -44,6 +46,40 @@ class AppStorageService {
       return apps.firstWhere((a) => a.id == appId);
     } catch (e) {
       return null;
+    }
+  }
+
+  // Helper methods for topics
+  Future<void> addTopic(String appId, TopicModel topic) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedTopics = List<TopicModel>.from(app.topics)..add(topic);
+      await saveApp(app.copyWith(topics: updatedTopics));
+    }
+  }
+
+  Future<void> deleteTopic(String appId, String topicId) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedTopics = app.topics.where((t) => t.id != topicId).toList();
+      await saveApp(app.copyWith(topics: updatedTopics));
+    }
+  }
+
+  // Helper methods for users
+  Future<void> addUser(String appId, UserModel user) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedUsers = List<UserModel>.from(app.users)..add(user);
+      await saveApp(app.copyWith(users: updatedUsers));
+    }
+  }
+
+  Future<void> deleteUser(String appId, String userId) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedUsers = app.users.where((u) => u.id != userId).toList();
+      await saveApp(app.copyWith(users: updatedUsers));
     }
   }
 }
