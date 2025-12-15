@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import '../services/purchases_service.dart';
 import '../widgets/custom_app_theme.dart';
 import 'main_screen.dart';
+
+const String _entitlementId = 'premium';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -30,10 +31,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     });
 
     try {
-      final offerings = await PurchasesService.getOfferings();
+      final offerings = await Purchases.getOfferings();
       
       Package? selectedPackage;
-      if (offerings?.current != null && offerings!.current!.availablePackages.isNotEmpty) {
+      if (offerings.current != null && 
+          offerings.current!.availablePackages.isNotEmpty) {
         selectedPackage = offerings.current!.availablePackages.first;
       }
 
@@ -80,18 +82,37 @@ class _PaywallScreenState extends State<PaywallScreen> {
     });
 
     try {
-      final success = await PurchasesService.purchasePackage(_selectedPackage!);
+      final result = await Purchases.purchase(PurchaseParams.package(_selectedPackage!));
+      final customerInfo = result.customerInfo;
+      final success = customerInfo.entitlements.active[_entitlementId] != null;
       
       if (success) {
-        // Re-check premium status to ensure it's updated
-        await PurchasesService.isPremium();
-        
         if (mounted) {
           // Premium unlocked, the app will automatically navigate away
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Welcome to Premium! 🎉'),
               backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Purchase was cancelled'),
+              backgroundColor: CustomAppTheme.darkError,
+            ),
+          );
+        }
+      }
+    } on PurchasesError catch (e) {
+      if (e.code != PurchasesErrorCode.purchaseCancelledError) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Purchase failed: $e'),
+              backgroundColor: CustomAppTheme.darkError,
             ),
           );
         }
@@ -145,12 +166,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     });
 
     try {
-      final success = await PurchasesService.restorePurchases();
-      
-      // Re-check premium status to ensure it's updated
-      if (success) {
-        await PurchasesService.isPremium();
-      }
+      final customerInfo = await Purchases.restorePurchases();
+      final success = customerInfo.entitlements.active[_entitlementId] != null;
       
       if (mounted) {
         if (success) {

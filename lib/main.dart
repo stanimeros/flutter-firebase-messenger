@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'screens/main_screen.dart';
 import 'screens/paywall_screen.dart';
-import 'services/purchases_service.dart';
 import 'widgets/custom_app_theme.dart';
+
+const String _entitlementId = 'premium';
+const String _androidApiKey = 'test_ZTunwknVYEPYcHIlWPKWveGKtXt';
+const String _iosApiKey = 'appl_xwaRyxxnbszykyrzROUEarNpcVn';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize RevenueCat Purchases
   try {
-    await PurchasesService.initialize();
+    final apiKey = Platform.isIOS ? _iosApiKey : _androidApiKey;
+    await Purchases.configure(PurchasesConfiguration(apiKey));
   } catch (e) {
-    // If initialization fails, app will still run but paywall won't work
     debugPrint('Failed to initialize Purchases: $e');
   }
   
@@ -43,39 +48,78 @@ class PaywallGate extends StatefulWidget {
 class _PaywallGateState extends State<PaywallGate> {
   bool _isLoading = true;
   bool _isPremium = false;
+  StreamController<bool>? _premiumStatusController;
+  StreamSubscription<bool>? _premiumStatusSubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkPremiumStatus();
     _setupListener();
   }
 
+  void _setupListener() {
+    // Initialize stream controller
+    _premiumStatusController = StreamController<bool>.broadcast();
+    
+    // Set up customer info update listener
+    Purchases.addCustomerInfoUpdateListener((customerInfo) {
+      final isPremium = customerInfo.entitlements.active[_entitlementId] != null;
+      _premiumStatusController?.add(isPremium);
+    });
+
+    // Get initial premium status
+    _checkPremiumStatus();
+
+    // Listen to premium status stream for real-time updates
+    _premiumStatusSubscription = _premiumStatusController!.stream.listen(
+      (isPremium) {
+        if (mounted) {
+          setState(() {
+            _isPremium = isPremium;
+            _isLoading = false;
+          });
+        }
+      },
+      onError: (error) {
+        debugPrint('Error in premium status stream: $error');
+        if (mounted) {
+          setState(() {
+            _isPremium = false;
+            _isLoading = false;
+          });
+        }
+      },
+    );
+  }
+
   Future<void> _checkPremiumStatus() async {
-    final isPremium = await PurchasesService.isPremium();
-    if (mounted) {
-      setState(() {
-        _isPremium = isPremium;
-        _isLoading = false;
-      });
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final isPremium = customerInfo.entitlements.active[_entitlementId] != null;
+      if (mounted) {
+        setState(() {
+          _isPremium = isPremium;
+          _isLoading = false;
+        });
+        _premiumStatusController?.add(isPremium);
+      }
+    } catch (e) {
+      debugPrint('Error checking premium status: $e');
+      if (mounted) {
+        setState(() {
+          _isPremium = false;
+          _isLoading = false;
+        });
+        _premiumStatusController?.add(false);
+      }
     }
   }
 
-  void _setupListener() {
-    // Periodically check for premium status updates
-    // This handles cases where purchase completes in background
-    // Check every 2 seconds for the first 10 seconds after initialization
-    int checks = 0;
-    void checkPeriodically() {
-      if (checks < 5 && mounted) {
-        Future.delayed(const Duration(seconds: 2), () {
-          _checkPremiumStatus();
-          checks++;
-          checkPeriodically();
-        });
-      }
-    }
-    checkPeriodically();
+  @override
+  void dispose() {
+    _premiumStatusSubscription?.cancel();
+    _premiumStatusController?.close();
+    super.dispose();
   }
 
   @override
