@@ -13,6 +13,7 @@ class NotificationModel {
   final DateTime createdAt;
   final bool sent;
   final String? error;
+  final String? nickname;
 
   NotificationModel({
     required this.id,
@@ -27,6 +28,7 @@ class NotificationModel {
     required this.createdAt,
     this.sent = false,
     this.error,
+    this.nickname,
   });
 
   Map<String, dynamic> toJson() {
@@ -43,6 +45,7 @@ class NotificationModel {
       'createdAt': createdAt.toIso8601String(),
       'sent': sent,
       'error': error,
+      'nickname': nickname,
     };
   }
 
@@ -60,6 +63,7 @@ class NotificationModel {
       createdAt: DateTime.parse(json['createdAt'] as String),
       sent: json['sent'] as bool? ?? false,
       error: json['error'] as String?,
+      nickname: json['nickname'] as String?,
     );
   }
 
@@ -76,6 +80,7 @@ class NotificationModel {
     DateTime? createdAt,
     bool? sent,
     String? error,
+    String? nickname,
   }) {
     return NotificationModel(
       id: id ?? this.id,
@@ -90,6 +95,7 @@ class NotificationModel {
       createdAt: createdAt ?? this.createdAt,
       sent: sent ?? this.sent,
       error: error ?? this.error,
+      nickname: nickname ?? this.nickname,
     );
   }
 }

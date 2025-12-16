@@ -174,40 +174,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     }
   }
 
-  Future<void> _deleteApp() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete App'),
-        content: Text('Are you sure you want to delete ${widget.app.name}? This action cannot be undone.'),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await _appStorage.deleteApp(_currentApp.id);
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App deleted')),
-        );
-      }
-    }
-  }
-
   Future<bool> _deleteDevice(UserModel device) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -378,15 +344,6 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
               }
             },
             tooltip: 'Edit App',
-          ),
-          IconButton(
-            icon: HeroIcon(
-              HeroIcons.trash,
-              color: Theme.of(context).colorScheme.error,
-              size: 18,
-            ),
-            onPressed: _deleteApp,
-            tooltip: 'Delete App',
           ),
         ],
       ),

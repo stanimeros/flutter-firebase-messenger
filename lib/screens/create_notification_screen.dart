@@ -13,11 +13,13 @@ import '../services/fcm_service.dart';
 class CreateNotificationScreen extends StatefulWidget {
   final void Function(VoidCallback)? onRefreshCallback;
   final VoidCallback? onDataChanged;
+  final NotificationModel? initialNotification;
 
   const CreateNotificationScreen({
     super.key,
     this.onRefreshCallback,
     this.onDataChanged,
+    this.initialNotification,
   });
 
   @override
@@ -29,6 +31,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final _nicknameController = TextEditingController();
 
   @override
   bool get wantKeepAlive => true;
@@ -54,7 +57,69 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   void initState() {
     super.initState();
     widget.onRefreshCallback?.call(_refresh);
-    _loadApps();
+    _loadApps().then((_) {
+      if (widget.initialNotification != null) {
+        _populateFromNotification(widget.initialNotification!);
+      }
+    });
+  }
+
+  Future<void> _populateFromNotification(NotificationModel notification) async {
+    _titleController.text = notification.title;
+    _bodyController.text = notification.body;
+    _imageUrlController.text = notification.imageUrl ?? '';
+    _nicknameController.text = notification.nickname ?? '';
+    if (notification.data != null) {
+      _customData.clear();
+      _customData.addAll(Map<String, String>.from(
+        notification.data!.map((key, value) => MapEntry(key, value.toString())),
+      ));
+    }
+    
+    // Set the selected app
+    if (notification.app.id.isNotEmpty) {
+      final app = _apps.firstWhere(
+        (a) => a.id == notification.app.id,
+        orElse: () => notification.app,
+      );
+      setState(() {
+        _selectedApp = app;
+      });
+      await _loadAppData(app);
+      
+      // Set the selected target based on notification
+      if (notification.topic != null) {
+        final topic = _topics.firstWhere(
+          (t) => t.name == notification.topic,
+          orElse: () => _topics.first,
+        );
+        setState(() {
+          _selectedTopic = topic;
+          _selectedDevice = null;
+          _selectedCondition = null;
+        });
+      } else if (notification.condition != null) {
+        // Try to find matching condition - this is complex, so we'll just set first if available
+        if (_conditions.isNotEmpty) {
+          setState(() {
+            _selectedCondition = _conditions.first;
+            _selectedDevice = null;
+            _selectedTopic = null;
+          });
+        }
+      } else if (notification.tokens != null && notification.tokens!.isNotEmpty) {
+        final token = notification.tokens!.first;
+        final device = _devices.firstWhere(
+          (d) => d.notificationToken == token,
+          orElse: () => _devices.first,
+        );
+        setState(() {
+          _selectedDevice = device;
+          _selectedTopic = null;
+          _selectedCondition = null;
+        });
+      }
+    }
   }
 
   void _refresh() {
@@ -312,6 +377,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         condition: condition,
         tokens: tokens,
         createdAt: DateTime.now(),
+        nickname: _nicknameController.text.trim().isEmpty ? null : _nicknameController.text.trim(),
       );
 
       final success = await _fcmService.sendNotification(
@@ -344,6 +410,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           _titleController.clear();
           _bodyController.clear();
           _imageUrlController.clear();
+          _nicknameController.clear();
           setState(() {
             _selectedDevice = null;
             _selectedTopic = null;
@@ -382,6 +449,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         createdAt: DateTime.now(),
         sent: false,
         error: e.toString(),
+        nickname: _nicknameController.text.trim().isEmpty ? null : _nicknameController.text.trim(),
       );
 
       await _notificationStorage.saveNotification(notification);
@@ -403,6 +471,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     _titleController.dispose();
     _bodyController.dispose();
     _imageUrlController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
@@ -484,6 +553,16 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nicknameController,
+                      enabled: _selectedApp != null,
+                      decoration: const InputDecoration(
+                        labelText: 'Nickname (Optional)',
+                        hintText: 'e.g., Welcome Message, Daily Reminder',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                   ],
                 ),

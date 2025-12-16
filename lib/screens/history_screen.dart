@@ -4,6 +4,7 @@ import 'package:heroicons/heroicons.dart';
 import '../models/notification_model.dart';
 import '../models/app_model.dart';
 import '../services/notification_storage_service.dart';
+import 'notification_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   final void Function(VoidCallback)? onRefreshCallback;
@@ -136,130 +137,40 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                         },
                         child: Card(
                           margin: EdgeInsets.zero,
-                          child: ExpansionTile(
+                          child: ListTile(
                             leading: _buildAppImage(notification.app),
-                            title: Text(notification.title),
-                            subtitle: Text(
-                              notification.createdAt.toLocal().toString().split('.')[0],
-                              style: Theme.of(context).textTheme.bodySmall,
+                            title: Text(notification.nickname ?? notification.title),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (notification.nickname != null && notification.nickname!.isNotEmpty)
+                                  Text(
+                                    notification.title,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                Text(
+                                  notification.createdAt.toLocal().toString().split('.')[0],
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
                             ),
                             trailing: _buildStatusIcon(notification.sent),
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    _buildInfoCard('Body', notification.body, icon: HeroIcons.documentText),
-                                    if (notification.topic != null) ...[
-                                      const SizedBox(height: 8),
-                                      _buildInfoCard('Topic', notification.topic!, icon: HeroIcons.hashtag),
-                                    ],
-                                    if (notification.tokens != null && notification.tokens!.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      _buildInfoCard(
-                                        'Recipient',
-                                        '${notification.tokens!.length} token(s)',
-                                        icon: HeroIcons.user,
-                                      ),
-                                    ],
-                                    if (notification.data != null && notification.data!.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.surface,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                HeroIcon(HeroIcons.codeBracket, size: 18),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  'Custom Data',
-                                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            ...notification.data!.entries.map((entry) => Padding(
-                                              padding: const EdgeInsets.symmetric(vertical: 4),
-                                              child: Row(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    '${entry.key}: ',
-                                                    style: const TextStyle(fontWeight: FontWeight.w500),
-                                                  ),
-                                                  Expanded(
-                                                    child: Text(
-                                                      entry.value.toString(),
-                                                      style: TextStyle(
-                                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                    if (notification.error != null) ...[
-                                      const SizedBox(height: 8),
-                                      Card(
-                                        color: Theme.of(context).colorScheme.errorContainer,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              HeroIcon(
-                                                HeroIcons.exclamationCircle,
-                                                color: Theme.of(context).colorScheme.error,
-                                                size: 18,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Error',
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Theme.of(context).colorScheme.error,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      notification.error!,
-                                                      style: TextStyle(
-                                                        color: Theme.of(context).colorScheme.onErrorContainer,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NotificationDetailScreen(
+                                    notification: notification,
+                                    onDataChanged: () {
+                                      _loadNotifications();
+                                      widget.onDataChanged?.call();
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                         ),
                       );
@@ -267,47 +178,6 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                   ),
         ),
       ],
-    );
-  }
-
-  Widget _buildInfoCard(String label, String value, {required HeroIcons icon}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HeroIcon(icon, size: 18),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
