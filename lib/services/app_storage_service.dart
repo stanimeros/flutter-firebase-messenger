@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_model.dart';
 import '../models/topic_model.dart';
-import '../models/user_model.dart';
+import '../models/device_model.dart';
 import '../models/condition_model.dart';
 import 'secure_storage_service.dart';
 
@@ -75,16 +75,16 @@ class AppStorageService {
     }
   }
 
-  // Helper methods for devices (renamed from users)
-  Future<void> addDevice(String appId, UserModel device) async {
+  // Helper methods for devices
+  Future<void> addDevice(String appId, DeviceModel device) async {
     final app = await getAppById(appId);
     if (app != null) {
-      final updatedDevices = List<UserModel>.from(app.devices)..add(device);
+      final updatedDevices = List<DeviceModel>.from(app.devices)..add(device);
       await saveApp(app.copyWith(devices: updatedDevices));
     }
   }
 
-  Future<void> updateDevice(String appId, UserModel device) async {
+  Future<void> updateDevice(String appId, DeviceModel device) async {
     final app = await getAppById(appId);
     if (app != null) {
       final updatedDevices = app.devices.map((d) => d.id == device.id ? device : d).toList();
@@ -101,7 +101,7 @@ class AppStorageService {
   }
 
   // Legacy support - keep for backward compatibility
-  Future<void> addUser(String appId, UserModel user) async {
+  Future<void> addUser(String appId, DeviceModel user) async {
     await addDevice(appId, user);
   }
 

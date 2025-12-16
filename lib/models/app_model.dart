@@ -1,5 +1,5 @@
 import 'topic_model.dart';
-import 'user_model.dart';
+import 'device_model.dart';
 import 'condition_model.dart';
 
 class AppModel {
@@ -9,7 +9,7 @@ class AppModel {
   final String? imageData; // Base64 encoded image data
   final DateTime createdAt;
   final List<TopicModel> topics;
-  final List<UserModel> devices; // Renamed from users
+  final List<DeviceModel> devices;
   final List<ConditionModel> conditions;
 
   AppModel({
@@ -19,7 +19,7 @@ class AppModel {
     this.imageData,
     required this.createdAt,
     List<TopicModel>? topics,
-    List<UserModel>? devices,
+    List<DeviceModel>? devices,
     List<ConditionModel>? conditions,
   })  : topics = topics ?? [],
         devices = devices ?? [],
@@ -48,8 +48,8 @@ class AppModel {
       topics: (json['topics'] as List<dynamic>?)
           ?.map((t) => TopicModel.fromJson(t as Map<String, dynamic>))
           .toList() ?? [],
-      devices: (json['devices'] as List<dynamic>? ?? json['users'] as List<dynamic>?) // Support legacy 'users' key
-          ?.map((u) => UserModel.fromJson(u as Map<String, dynamic>))
+      devices: (json['devices'] as List<dynamic>?)
+          ?.map((u) => DeviceModel.fromJson(u as Map<String, dynamic>))
           .toList() ?? [],
       conditions: (json['conditions'] as List<dynamic>?)
           ?.map((c) => ConditionModel.fromJson(c as Map<String, dynamic>))
@@ -64,7 +64,7 @@ class AppModel {
     String? imageData,
     DateTime? createdAt,
     List<TopicModel>? topics,
-    List<UserModel>? devices,
+    List<DeviceModel>? devices,
     List<ConditionModel>? conditions,
   }) {
     return AppModel(

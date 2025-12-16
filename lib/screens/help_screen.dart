@@ -162,7 +162,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.hashtag, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Managing Topics & Users',
+                        'Managing Topics & Devices',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
@@ -187,12 +187,12 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    '3. Add Users',
+                    '3. Add Devices',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'In the Users tab, tap the + button and enter a user name with their FCM device token. Users represent individual devices that can receive notifications.',
+                    'In the Devices tab, tap the + button and enter a device name with their FCM device token. Devices represent individual devices that can receive notifications.',
                   ),
                 ],
               ),
@@ -241,10 +241,10 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Toggle between Topics or Users, then select:\n'
+                    'Toggle between Topics or Devices, then select:\n'
                     '• One Topic: Send to all devices subscribed to that topic\n'
-                    '• One User: Send to a specific device\n'
-                    'Note: You must select either a topic OR a user (required).',
+                    '• One Device: Send to a specific device\n'
+                    'Note: You must select either a topic OR a device (required).',
                   ),
                   const SizedBox(height: 12),
                   const Text(

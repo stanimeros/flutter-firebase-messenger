@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
 import '../models/topic_model.dart';
-import '../models/user_model.dart';
+import '../models/device_model.dart';
 import '../models/condition_model.dart';
 import '../services/app_storage_service.dart';
 import '../widgets/custom_app_bar.dart';
@@ -28,7 +28,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   
   late AppModel _currentApp;
   List<TopicModel> _topics = [];
-  List<UserModel> _devices = [];
+  List<DeviceModel> _devices = [];
   List<ConditionModel> _conditions = [];
 
   @override
@@ -133,7 +133,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     return false;
   }
 
-  Future<void> _showAddDeviceDialog({UserModel? deviceToEdit}) async {
+  Future<void> _showAddDeviceDialog({DeviceModel? deviceToEdit}) async {
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => _AddDeviceDialog(deviceToEdit: deviceToEdit),
@@ -142,7 +142,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     if (result != null && result.containsKey('name') && result.containsKey('token')) {
       if (deviceToEdit != null) {
         // Update existing device
-        final updatedDevice = UserModel(
+        final updatedDevice = DeviceModel(
           id: deviceToEdit.id,
           name: result['name']!,
           notificationToken: result['token']!,
@@ -156,7 +156,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
         }
       } else {
         // Add new device
-        final device = UserModel(
+        final device = DeviceModel(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           name: result['name']!,
           notificationToken: result['token']!,
@@ -174,7 +174,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     }
   }
 
-  Future<bool> _deleteDevice(UserModel device) async {
+  Future<bool> _deleteDevice(DeviceModel device) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -727,7 +727,7 @@ class _AddTopicDialogState extends State<_AddTopicDialog> {
 }
 
 class _AddDeviceDialog extends StatefulWidget {
-  final UserModel? deviceToEdit;
+  final DeviceModel? deviceToEdit;
 
   const _AddDeviceDialog({this.deviceToEdit});
 

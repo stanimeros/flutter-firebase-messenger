@@ -159,61 +159,89 @@ class NotificationDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      HeroIcon(HeroIcons.clock, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Sent At',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    notification.createdAt.toLocal().toString().split('.')[0],
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: notification.sent
-                              ? Colors.green.withValues(alpha: 0.1)
-                              : Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            HeroIcon(
-                              notification.sent ? HeroIcons.checkCircle : HeroIcons.xCircle,
-                              style: HeroIconStyle.solid,
-                              color: notification.sent ? Colors.green : Colors.red,
-                              size: 16,
+                            Row(
+                              children: [
+                                HeroIcon(HeroIcons.clock, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Sent At',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(height: 8),
                             Text(
-                              notification.sent ? 'Sent' : 'Failed',
+                              notification.createdAt.toLocal().toString().split('.')[0],
                               style: TextStyle(
-                                color: notification.sent ? Colors.green : Colors.red,
-                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
                         ),
                       ),
+                      // Error code or 200 in top right
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: notification.sent
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _getStatusCode(notification),
+                          style: TextStyle(
+                            color: notification.sent ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  if (notification.error != null) ...[
-                    const SizedBox(height: 12),
-                    _buildErrorDisplay(context, notification.error!),
-                  ],
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: notification.sent
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        HeroIcon(
+                          notification.sent ? HeroIcons.checkCircle : HeroIcons.xCircle,
+                          style: HeroIconStyle.solid,
+                          color: notification.sent ? Colors.green : Colors.red,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _getStatusMessage(notification),
+                            style: TextStyle(
+                              color: notification.sent ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: null,
+                            softWrap: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -241,6 +269,46 @@ class NotificationDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getStatusCode(NotificationModel notification) {
+    if (notification.sent) {
+      return '200';
+    }
+    
+    if (notification.error != null) {
+      try {
+        final errorJson = jsonDecode(notification.error!) as Map<String, dynamic>;
+        final errorCode = errorJson['error']?['code']?.toString() ?? errorJson['code']?.toString();
+        if (errorCode != null) {
+          return errorCode;
+        }
+      } catch (e) {
+        // Not JSON, return default
+      }
+    }
+    
+    return 'Error';
+  }
+
+  String _getStatusMessage(NotificationModel notification) {
+    if (notification.sent) {
+      return 'Sent';
+    }
+    
+    if (notification.error != null) {
+      try {
+        final errorJson = jsonDecode(notification.error!) as Map<String, dynamic>;
+        final errorMessage = errorJson['error']?['message']?.toString() ?? errorJson['message']?.toString();
+        if (errorMessage != null) {
+          return errorMessage;
+        }
+      } catch (e) {
+        // Not JSON, return default
+      }
+    }
+    
+    return 'Failed';
   }
 
   Widget _buildInfoCard(BuildContext context, String label, String value, {required HeroIcons icon}) {
@@ -276,108 +344,6 @@ class NotificationDetailScreen extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorDisplay(BuildContext context, String errorString) {
-    Map<String, dynamic>? errorJson;
-    String? errorCode;
-    String? errorMessage;
-
-    // Try to parse as JSON
-    try {
-      errorJson = jsonDecode(errorString) as Map<String, dynamic>;
-      errorCode = errorJson['code']?.toString() ?? errorJson['error']?['code']?.toString();
-      errorMessage = errorJson['message']?.toString() ?? errorJson['error']?['message']?.toString();
-    } catch (e) {
-      // Not JSON, use the string as-is
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HeroIcon(
-            HeroIcons.exclamationCircle,
-            color: Theme.of(context).colorScheme.error,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Error',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (errorCode != null) ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Code: ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          errorCode,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                if (errorMessage != null) ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Message: ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          errorMessage,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Text(
-                    errorString,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -434,11 +400,14 @@ class NotificationDetailScreen extends StatelessWidget {
         Navigator.pop(context);
       }
     } catch (e) {
+      // Parse error to extract JSON error if available
+      final errorString = _parseError(e);
+      
       final updatedNotification = notification.copyWith(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         createdAt: DateTime.now(),
         sent: false,
-        error: e.toString(),
+        error: errorString,
       );
 
       await notificationStorage.saveNotification(updatedNotification);
@@ -453,5 +422,50 @@ class NotificationDetailScreen extends StatelessWidget {
         onDataChanged?.call();
       }
     }
+  }
+
+  String? _parseError(dynamic error) {
+    final errorString = error.toString();
+    
+    // Check if error contains JSON response body
+    // Format: "Exception: FCM API error: 400 - {...json...}" (multiline)
+    // Try to find JSON object starting after "FCM API error: \d+ - "
+    final jsonMatch = RegExp(r'FCM API error: \d+ - (.+)$', dotAll: true).firstMatch(errorString);
+    if (jsonMatch != null) {
+      final jsonString = jsonMatch.group(1);
+      if (jsonString != null) {
+        try {
+          // Try to parse as JSON to validate it
+          jsonDecode(jsonString.trim()) as Map<String, dynamic>;
+          // Return the JSON string so it can be parsed later for display
+          return jsonString.trim();
+        } catch (e) {
+          // Not valid JSON, continue to other checks
+        }
+      }
+    }
+    
+    // Alternative: Try to extract JSON object directly from the string
+    // Look for opening brace and try to parse from there
+    final braceIndex = errorString.indexOf('{');
+    if (braceIndex != -1) {
+      try {
+        final jsonString = errorString.substring(braceIndex);
+        jsonDecode(jsonString) as Map<String, dynamic>;
+        return jsonString;
+      } catch (e) {
+        // Not valid JSON, continue
+      }
+    }
+    
+    // Check if the error string itself is JSON
+    try {
+      jsonDecode(errorString) as Map<String, dynamic>;
+      return errorString;
+    } catch (e) {
+      // Not JSON, return original error string
+    }
+    
+    return errorString;
   }
 }
