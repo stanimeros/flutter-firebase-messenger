@@ -127,6 +127,12 @@ class CustomAppTheme {
           side: BorderSide(color: darkOnSurface.withValues(alpha: 0.3)),
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: darkCardSurface,
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+        ),
+      ),
     );
   }
 }

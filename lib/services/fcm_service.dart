@@ -72,10 +72,33 @@ class FCMService {
         'notification': {
           'title': title,
           'body': body,
-          if (imageUrl != null) 'image': imageUrl,
         },
         if (data != null) 'data': data,
       };
+
+      // Add image URL to platform-specific fields if provided
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        message['android'] = {
+          'notification': {
+            'image': imageUrl,
+          },
+        };
+        message['apns'] = {
+          'payload': {
+            'aps': {
+              'mutable-content': 1,
+            },
+          },
+          'fcm_options': {
+            'image': imageUrl,
+          },
+        };
+        message['webpush'] = {
+          'headers': {
+            'image': imageUrl,
+          },
+        };
+      }
       
       // Set target (token, topic, or condition)
       if (topic != null && topic.isNotEmpty) {

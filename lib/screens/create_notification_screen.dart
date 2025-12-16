@@ -26,6 +26,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
+  final _imageUrlController = TextEditingController();
 
   @override
   bool get wantKeepAlive => true;
@@ -137,11 +138,14 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     });
 
     try {
+      final imageUrl = _imageUrlController.text.trim();
+      
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         app: _selectedApp!,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
+        imageUrl: imageUrl.isEmpty ? null : imageUrl,
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
         tokens: _selectedUser == null ? null : [_selectedUser!.notificationToken],
@@ -152,7 +156,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         app: _selectedApp!,
         title: notification.title,
         body: notification.body,
-        imageUrl: null,
+        imageUrl: notification.imageUrl,
         data: notification.data,
         topic: notification.topic,
         tokens: notification.tokens,
@@ -176,6 +180,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         if (success) {
           _titleController.clear();
           _bodyController.clear();
+          _imageUrlController.clear();
           setState(() {
             if (_useTopics) {
               _selectedTopic = null;
@@ -188,11 +193,14 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         }
       }
     } catch (e) {
+      final imageUrl = _imageUrlController.text.trim();
+      
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         app: _selectedApp!,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
+        imageUrl: imageUrl.isEmpty ? null : imageUrl,
         data: _customData.isEmpty ? null : _customData,
         topic: _selectedTopic?.name,
         tokens: _selectedUser == null ? null : [_selectedUser!.notificationToken],
@@ -225,6 +233,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -297,6 +306,76 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                       },
                     ),
                     const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _imageUrlController,
+                      enabled: _selectedApp != null,
+                      decoration: const InputDecoration(
+                        labelText: 'Image URL (Optional)',
+                        hintText: 'https://example.com/image.png',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.url,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Custom Data',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _selectedApp != null ? _showAddCustomDataDialog : null,
+                          icon: const HeroIcon(HeroIcons.plus),
+                          label: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                    if (_customData.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      ..._customData.entries.map((entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: ListTile(
+                                title: Text(entry.key),
+                                subtitle: Text(entry.value),
+                                trailing: IconButton(
+                                  icon: const HeroIcon(HeroIcons.xMark),
+                                  onPressed: () => _removeCustomData(entry.key),
+                                ),
+                              ),
+                            ),
+                      )),
+                    ]
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
@@ -395,55 +474,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Custom Data',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _selectedApp != null ? _showAddCustomDataDialog : null,
-                          icon: const HeroIcon(HeroIcons.plus),
-                          label: const Text('Add'),
-                        ),
-                      ],
-                    ),
-                    if (_customData.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      ..._customData.entries.map((entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: ListTile(
-                                title: Text(entry.key),
-                                subtitle: Text(entry.value),
-                                trailing: IconButton(
-                                  icon: const HeroIcon(HeroIcons.xMark),
-                                  onPressed: () => _removeCustomData(entry.key),
-                                ),
-                              ),
-                            ),
-                      )),
-                    ]
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: (_selectedApp != null && 
@@ -486,6 +516,7 @@ extension NotificationModelExtension on NotificationModel {
       app: app,
       title: title ?? this.title,
       body: body ?? this.body,
+      imageUrl: imageUrl ?? this.imageUrl,
       data: data ?? this.data,
       topic: topic ?? this.topic,
       tokens: tokens ?? this.tokens,

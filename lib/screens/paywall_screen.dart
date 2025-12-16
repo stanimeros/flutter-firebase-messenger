@@ -1,8 +1,10 @@
+import 'dart:io';
+
+import 'package:fire_message/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../widgets/custom_app_theme.dart';
-import 'main_screen.dart';
 
 const String _entitlementId = 'premium';
 
@@ -56,12 +58,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load subscription options: $e'),
-            backgroundColor: CustomAppTheme.darkError,
-          ),
-        );
+        debugPrint('Failed to load subscription options: $e');
       }
     }
   }
@@ -141,22 +138,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  bool _hasSubscriptions() {
-    return _offerings?.current != null &&
-        _offerings!.current!.availablePackages.isNotEmpty;
-  }
-
-  Future<void> _skipForNow() async {
-    // Navigate to main screen - PaywallGate will allow it since we granted temporary access
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const MainScreen(),
-        ),
-      );
     }
   }
 
@@ -327,7 +308,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       }),
                     // Purchase/Skip button
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _hasSubscriptions() ? _purchasePackage : _skipForNow,
+                      onPressed: _isLoading ? null :Platform.isIOS ? _purchasePackage : () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const MainScreen())),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CustomAppTheme.primaryCyan,
                         foregroundColor: Colors.black,
@@ -346,7 +327,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               ),
                             )
                           : Text(
-                              _hasSubscriptions() ? 'Subscribe Now' : 'Skip for Now',
+                              'Subscribe Now',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
