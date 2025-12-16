@@ -338,6 +338,76 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   }
 
 
+  void _showSendConfirmation() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Send Notification',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const HeroIcon(HeroIcons.xMark),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Are you sure you want to send this notification?',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ActionSlider.standard(
+              width: double.infinity,
+              height: 56,
+              backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+              toggleColor: CustomAppTheme.primaryCyan,
+              action: (controller) async {
+                controller.loading();
+                await _sendNotification();
+                if (context.mounted) {
+                  controller.success();
+                  Navigator.pop(context); // Close bottom sheet
+                  controller.reset();
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Slide to Send',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _sendNotification() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedApp == null) {
@@ -698,32 +768,32 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
               ),
             ),
             const SizedBox(height: 16),
-            ActionSlider.standard(
-              width: double.infinity,
-              height: 56,
-              backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
-              toggleColor: CustomAppTheme.primaryCyan,
-              action: (controller) async {
+            ElevatedButton(
+              onPressed: () {
                 if (_selectedApp == null || 
                     (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null)) {
-                  controller.reset();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please select an app and target')),
+                  );
                   return;
                 }
-                controller.loading();
-                await _sendNotification();
-                controller.success();
-                await Future.delayed(const Duration(seconds: 1));
-                controller.reset();
+                _showSendConfirmation();
               },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 56),
+                backgroundColor: CustomAppTheme.primaryCyan,
+                foregroundColor: Colors.white,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const HeroIcon(HeroIcons.paperAirplane, size: 20),
+                  const SizedBox(width: 8),
                   const Text(
-                    'Slide to Send',
+                    'Send Notification',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
                     ),
                   ),
                 ],

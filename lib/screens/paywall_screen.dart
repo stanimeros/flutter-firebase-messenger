@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:fire_message/screens/main_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -224,39 +223,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo/Icon
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            CustomAppTheme.primaryPurple,
-                            CustomAppTheme.primaryBlue,
-                            CustomAppTheme.primaryCyan,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Icon(
-                        Icons.rocket_launch,
-                        size: 50,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
                     // Title
                     Text(
-                      'Unlock Premium',
+                      'Unlock Full Access',
                       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
                     // Subtitle
                     Text(
                       'Get unlimited access to all premium features',
@@ -265,26 +240,34 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     // Features list
                     _buildFeatureItem(
                       icon: HeroIcons.sparkles,
-                      text: 'Unlimited notifications',
+                      title: 'Unlimited Notifications',
+                      description: 'Send as many notifications as you need',
+                      gradient: [CustomAppTheme.primaryPurple, CustomAppTheme.primaryBlue],
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
-                      icon: HeroIcons.bolt,
-                      text: 'Priority support',
+                      icon: HeroIcons.hashtag,
+                      title: 'Unlimited Topics & Conditions',
+                      description: 'Create and manage unlimited targeting options',
+                      gradient: [CustomAppTheme.primaryBlue, CustomAppTheme.primaryCyan],
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
-                      icon: HeroIcons.shieldCheck,
-                      text: 'Advanced security',
+                      icon: HeroIcons.devicePhoneMobile,
+                      title: 'Manage All Devices',
+                      description: 'Track and send to unlimited devices',
+                      gradient: [CustomAppTheme.primaryCyan, CustomAppTheme.primaryBlue],
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
-                      icon: HeroIcons.chartBar,
-                      text: 'Analytics & insights',
+                      icon: HeroIcons.clock,
+                      title: 'Full History & Tools',
+                      description: 'View history, duplicate, and resend notifications',
+                      gradient: [CustomAppTheme.primaryPurple, CustomAppTheme.primaryCyan],
                     ),
                     const SizedBox(height: 24),
                     // Subscription packages
@@ -308,10 +291,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       }),
                     // Purchase/Skip button
                     ElevatedButton(
-                      onPressed: _isLoading ? null :Platform.isIOS ? _purchasePackage : () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const MainScreen())),
+                      onPressed: _isLoading ? null : kReleaseMode ? _purchasePackage : () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const MainScreen())),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: CustomAppTheme.primaryCyan,
-                        foregroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -334,7 +315,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               ),
                             ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     // Restore purchases button
                     TextButton(
                       onPressed: _isRestoring ? null : _restorePurchases,
@@ -349,7 +330,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             )
                           : const Text('Restore Purchases'),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     // Terms and privacy
                     Text(
                       'By subscribing, you agree to our Terms of Service and Privacy Policy. Subscription will auto-renew unless cancelled.',
@@ -368,32 +349,76 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Widget _buildFeatureItem({
     required HeroIcons icon,
-    required String text,
+    required String title,
+    required String description,
+    required List<Color> gradient,
   }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: CustomAppTheme.primaryCyan.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: HeroIcon(
-            icon,
-            color: CustomAppTheme.primaryCyan,
-            size: 20,
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            gradient[0].withValues(alpha: 0.15),
+            gradient[1].withValues(alpha: 0.15),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: CustomAppTheme.darkOnSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: gradient[0].withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: gradient[0].withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
+              ],
+            ),
+            child: HeroIcon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: CustomAppTheme.darkOnSurface.withValues(alpha: 0.7),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
