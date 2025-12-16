@@ -207,6 +207,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
+  String _getButtonText() {
+    if (_selectedPackage != null && _introlEligibility != null) {
+      final hasIntroPrice = _selectedPackage!.storeProduct.introductoryPrice != null;
+      final isEligible = _introlEligibility!.status == IntroEligibilityStatus.introEligibilityStatusEligible;
+      
+      if (hasIntroPrice && isEligible) {
+        return 'Start your free trial';
+      }
+    }
+    return 'Subscribe Now';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -308,7 +320,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               ),
                             )
                           : Text(
-                              'Subscribe Now',
+                              _getButtonText(),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
