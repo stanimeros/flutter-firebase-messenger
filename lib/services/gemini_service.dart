@@ -14,6 +14,13 @@ class GeminiService {
         : dotenv.env['GEMINI_ANDROID_API_KEY'];
   }
 
+  String? _getBundleId() {
+    final isIOS = Platform.isIOS;
+    return isIOS 
+        ? dotenv.env['IOS_BUNDLE_ID']
+        : dotenv.env['ANDROID_PACKAGE_NAME'];
+  }
+
   /// Check if API key is set for the current platform
   bool hasApiKey() {
     final apiKey = _getApiKey();
@@ -37,6 +44,7 @@ class GeminiService {
         url,
         headers: {
           'Content-Type': 'application/json',
+          if (Platform.isIOS) 'X-Ios-Bundle-Identifier': _getBundleId() ?? '',
         },
         body: jsonEncode({
           'contents': [
