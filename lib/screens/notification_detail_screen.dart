@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:action_slider/action_slider.dart';
@@ -7,6 +6,7 @@ import '../services/notification_storage_service.dart';
 import '../services/fcm_service.dart';
 import 'create_notification_screen.dart';
 import '../widgets/custom_app_theme.dart';
+import '../utils/tools.dart';
 
 class NotificationDetailScreen extends StatelessWidget {
   final NotificationModel notification;
@@ -275,42 +275,18 @@ class NotificationDetailScreen extends StatelessWidget {
 
   String _getStatusCode(NotificationModel notification) {
     if (notification.sent) {
-      return '200';
+      return notification.successCode ?? '200';
     }
     
-    if (notification.error != null) {
-      try {
-        final errorJson = jsonDecode(notification.error!) as Map<String, dynamic>;
-        final errorCode = errorJson['error']?['code']?.toString() ?? errorJson['code']?.toString();
-        if (errorCode != null) {
-          return errorCode;
-        }
-      } catch (e) {
-        // Not JSON, return default
-      }
-    }
-    
-    return 'Error';
+    return notification.errorCode ?? 'Error';
   }
 
   String _getStatusMessage(NotificationModel notification) {
     if (notification.sent) {
-      return 'Sent';
+      return notification.successMessage ?? 'Sent';
     }
     
-    if (notification.error != null) {
-      try {
-        final errorJson = jsonDecode(notification.error!) as Map<String, dynamic>;
-        final errorMessage = errorJson['error']?['message']?.toString() ?? errorJson['message']?.toString();
-        if (errorMessage != null) {
-          return errorMessage;
-        }
-      } catch (e) {
-        // Not JSON, return default
-      }
-    }
-    
-    return 'Failed';
+    return notification.errorMessage ?? 'Failed';
   }
 
   Widget _buildInfoCard(BuildContext context, String label, String value, {required HeroIcons icon}) {
@@ -411,7 +387,6 @@ class NotificationDetailScreen extends StatelessWidget {
                 await _resendNotification(context);
                 if (context.mounted) {
                   controller.success();
-                  await Future.delayed(const Duration(seconds: 1));
                   Navigator.pop(context); // Close bottom sheet
                   controller.reset();
                 }
@@ -458,6 +433,10 @@ class NotificationDetailScreen extends StatelessWidget {
         createdAt: DateTime.now(),
         sent: success,
         error: success ? null : 'Failed to send notification',
+        successCode: success ? '200' : null,
+        successMessage: success ? 'Notification resent successfully' : null,
+        errorCode: success ? null : null, // Will be set in catch block if error occurs
+        errorMessage: success ? null : null, // Will be set in catch block if error occurs
       );
 
       await notificationStorage.saveNotification(updatedNotification);
@@ -475,13 +454,16 @@ class NotificationDetailScreen extends StatelessWidget {
       }
     } catch (e) {
       // Parse error to extract JSON error if available
-      final errorString = _parseError(e);
+      final errorString = ErrorUtils.parseError(e);
+      final errorData = ErrorUtils.extractErrorCodeAndMessage(e);
       
       final updatedNotification = notification.copyWith(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         createdAt: DateTime.now(),
         sent: false,
         error: errorString,
+        errorCode: errorData?['code'],
+        errorMessage: errorData?['message'],
       );
 
       await notificationStorage.saveNotification(updatedNotification);
@@ -489,7 +471,7 @@ class NotificationDetailScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(updatedNotification.errorMessage ?? errorString),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -498,48 +480,4 @@ class NotificationDetailScreen extends StatelessWidget {
     }
   }
 
-  String? _parseError(dynamic error) {
-    final errorString = error.toString();
-    
-    // Check if error contains JSON response body
-    // Format: "Exception: FCM API error: 400 - {...json...}" (multiline)
-    // Try to find JSON object starting after "FCM API error: \d+ - "
-    final jsonMatch = RegExp(r'FCM API error: \d+ - (.+)$', dotAll: true).firstMatch(errorString);
-    if (jsonMatch != null) {
-      final jsonString = jsonMatch.group(1);
-      if (jsonString != null) {
-        try {
-          // Try to parse as JSON to validate it
-          jsonDecode(jsonString.trim()) as Map<String, dynamic>;
-          // Return the JSON string so it can be parsed later for display
-          return jsonString.trim();
-        } catch (e) {
-          // Not valid JSON, continue to other checks
-        }
-      }
-    }
-    
-    // Alternative: Try to extract JSON object directly from the string
-    // Look for opening brace and try to parse from there
-    final braceIndex = errorString.indexOf('{');
-    if (braceIndex != -1) {
-      try {
-        final jsonString = errorString.substring(braceIndex);
-        jsonDecode(jsonString) as Map<String, dynamic>;
-        return jsonString;
-      } catch (e) {
-        // Not valid JSON, continue
-      }
-    }
-    
-    // Check if the error string itself is JSON
-    try {
-      jsonDecode(errorString) as Map<String, dynamic>;
-      return errorString;
-    } catch (e) {
-      // Not JSON, return original error string
-    }
-    
-    return errorString;
-  }
 }

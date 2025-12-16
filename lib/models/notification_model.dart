@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:fire_message/models/app_model.dart';
 
 class NotificationModel {
@@ -12,8 +13,12 @@ class NotificationModel {
   final List<String>? tokens;
   final DateTime createdAt;
   final bool sent;
-  final String? error;
+  final String? error; // Kept for backward compatibility
   final String? nickname;
+  final String? errorCode;
+  final String? errorMessage;
+  final String? successCode;
+  final String? successMessage;
 
   NotificationModel({
     required this.id,
@@ -29,6 +34,10 @@ class NotificationModel {
     this.sent = false,
     this.error,
     this.nickname,
+    this.errorCode,
+    this.errorMessage,
+    this.successCode,
+    this.successMessage,
   });
 
   Map<String, dynamic> toJson() {
@@ -46,10 +55,29 @@ class NotificationModel {
       'sent': sent,
       'error': error,
       'nickname': nickname,
+      'errorCode': errorCode,
+      'errorMessage': errorMessage,
+      'successCode': successCode,
+      'successMessage': successMessage,
     };
   }
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final error = json['error'] as String?;
+    String? errorCode;
+    String? errorMessage;
+    
+    // Parse error JSON if available to extract code and message
+    if (error != null) {
+      try {
+        final errorJson = jsonDecode(error) as Map<String, dynamic>;
+        errorCode = errorJson['error']?['code']?.toString() ?? errorJson['code']?.toString();
+        errorMessage = errorJson['error']?['message']?.toString() ?? errorJson['message']?.toString();
+      } catch (e) {
+        // Not JSON, keep as is
+      }
+    }
+    
     return NotificationModel(
       id: json['id'] as String,
       app: AppModel.fromJson(json['app'] as Map<String, dynamic>),
@@ -62,8 +90,12 @@ class NotificationModel {
       tokens: json['tokens'] != null ? List<String>.from(json['tokens']) : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
       sent: json['sent'] as bool? ?? false,
-      error: json['error'] as String?,
+      error: error,
       nickname: json['nickname'] as String?,
+      errorCode: json['errorCode'] as String? ?? errorCode,
+      errorMessage: json['errorMessage'] as String? ?? errorMessage,
+      successCode: json['successCode'] as String?,
+      successMessage: json['successMessage'] as String?,
     );
   }
 
@@ -81,6 +113,10 @@ class NotificationModel {
     bool? sent,
     String? error,
     String? nickname,
+    String? errorCode,
+    String? errorMessage,
+    String? successCode,
+    String? successMessage,
   }) {
     return NotificationModel(
       id: id ?? this.id,
@@ -96,6 +132,10 @@ class NotificationModel {
       sent: sent ?? this.sent,
       error: error ?? this.error,
       nickname: nickname ?? this.nickname,
+      errorCode: errorCode ?? this.errorCode,
+      errorMessage: errorMessage ?? this.errorMessage,
+      successCode: successCode ?? this.successCode,
+      successMessage: successMessage ?? this.successMessage,
     );
   }
 }
