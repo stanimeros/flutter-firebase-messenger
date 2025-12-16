@@ -4,7 +4,7 @@ import 'package:heroicons/heroicons.dart';
 import 'package:action_slider/action_slider.dart';
 import '../models/notification_model.dart';
 import '../services/notification_storage_service.dart';
-import '../services/fcm_service.dart';
+import '../services/messaging_service.dart';
 import 'create_notification_screen.dart';
 import '../widgets/custom_app_theme.dart';
 import '../utils/tools.dart';
@@ -402,11 +402,11 @@ class NotificationDetailScreen extends StatelessWidget {
   }
 
   Future<void> _resendNotification(BuildContext context) async {
-    final fcmService = FCMService();
+    final messagingService = MessagingService();
     final notificationStorage = NotificationStorageService();
 
     try {
-      final success = await fcmService.sendNotification(
+      final success = await messagingService.sendNotification(
         app: notification.app,
         title: notification.title,
         body: notification.body,

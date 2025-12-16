@@ -4,7 +4,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import '../models/app_model.dart';
 import 'secure_storage_service.dart';
 
-class FCMService {
+class MessagingService {
   final _secureStorage = SecureStorageService();
   static const _fcmScope = 'https://www.googleapis.com/auth/firebase.messaging';
 

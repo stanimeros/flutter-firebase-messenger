@@ -8,7 +8,7 @@ import '../models/device_model.dart';
 import '../models/condition_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
-import '../services/fcm_service.dart';
+import '../services/messaging_service.dart';
 import '../widgets/custom_app_theme.dart';
 import '../utils/tools.dart';
 
@@ -40,7 +40,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
 
   final _appStorage = AppStorageService();
   final _notificationStorage = NotificationStorageService();
-  final _fcmService = FCMService();
+  final _messagingService = MessagingService();
 
   List<AppModel> _apps = [];
   AppModel? _selectedApp;
@@ -384,7 +384,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         nickname: _nicknameController.text.trim(),
       );
 
-      final success = await _fcmService.sendNotification(
+      final success = await _messagingService.sendNotification(
         app: _selectedApp!,
         title: notification.title,
         body: notification.body,
