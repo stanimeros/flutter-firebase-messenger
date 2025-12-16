@@ -136,7 +136,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.hashtag, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Devices, Topics & Conditions',
+                        'Devices & Conditions',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],

@@ -252,7 +252,7 @@ class NotificationDetailScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: notification.sent ? null : () => _showResendConfirmation(context),
+                    onPressed: () => _showResendConfirmation(context),
                     icon: const HeroIcon(HeroIcons.paperAirplane),
                     label: const Text('Resend'),
                   ),
