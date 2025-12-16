@@ -100,11 +100,6 @@ class AppStorageService {
     }
   }
 
-  // Legacy support - keep for backward compatibility
-  Future<void> addUser(String appId, DeviceModel user) async {
-    await addDevice(appId, user);
-  }
-
   Future<void> deleteUser(String appId, String userId) async {
     await deleteDevice(appId, userId);
   }

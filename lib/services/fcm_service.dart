@@ -55,7 +55,7 @@ class FCMService {
     Map<String, dynamic>? data,
     String? topic,
     String? condition,
-    List<String>? tokens,
+    String? token,
   }) async {
     try {
       // Get OAuth 2.0 access token
@@ -106,16 +106,10 @@ class FCMService {
         message['condition'] = condition;
       } else if (topic != null && topic.isNotEmpty) {
         message['topic'] = topic;
-      } else if (tokens != null && tokens.isNotEmpty) {
-        if (tokens.length == 1) {
-          message['token'] = tokens.first;
-        } else {
-          // For multiple tokens, we need to send multiple requests or use condition
-          // For now, send to first token (you might want to implement batch sending)
-          message['token'] = tokens.first;
-        }
+      } else if (token != null && token.isNotEmpty) {
+        message['token'] = token;
       } else {
-        throw Exception('Either topic, condition, or tokens must be provided');
+        throw Exception('Either topic, condition, or token must be provided');
       }
       
       final payload = <String, dynamic>{

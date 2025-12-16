@@ -1,3 +1,4 @@
+import 'package:fire_message/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:action_slider/action_slider.dart';
@@ -22,7 +23,7 @@ class NotificationDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(notification.nickname ?? 'Notification Details'),
+        title: Text(notification.nickname),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -49,12 +50,12 @@ class NotificationDetailScreen extends StatelessWidget {
               notification.body,
               icon: HeroIcons.chatBubbleLeftRight,
             ),
-            if (notification.nickname != null && notification.nickname!.isNotEmpty) ...[
+            if (notification.nickname.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildInfoCard(
                 context,
                 'Nickname',
-                notification.nickname!,
+                notification.nickname,
                 icon: HeroIcons.tag,
               ),
             ],
@@ -85,12 +86,12 @@ class NotificationDetailScreen extends StatelessWidget {
                 icon: HeroIcons.funnel,
               ),
             ],
-            if (notification.tokens != null && notification.tokens!.isNotEmpty) ...[
+            if (notification.token != null && notification.token!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildInfoCard(
                 context,
                 'Recipient',
-                '${notification.tokens!.length} token(s)',
+                notification.token!,
                 icon: HeroIcons.user,
               ),
             ],
@@ -274,19 +275,11 @@ class NotificationDetailScreen extends StatelessWidget {
   }
 
   String _getStatusCode(NotificationModel notification) {
-    if (notification.sent) {
-      return notification.successCode ?? '200';
-    }
-    
-    return notification.errorCode ?? 'Error';
+    return notification.resultCode ?? (notification.sent ? '200' : 'Error');
   }
 
   String _getStatusMessage(NotificationModel notification) {
-    if (notification.sent) {
-      return notification.successMessage ?? 'Sent';
-    }
-    
-    return notification.errorMessage ?? 'Failed';
+    return notification.resultMessage ?? (notification.sent ? 'Sent' : 'Failed');
   }
 
   Widget _buildInfoCard(BuildContext context, String label, String value, {required HeroIcons icon}) {
@@ -334,9 +327,14 @@ class NotificationDetailScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreateNotificationScreen(
-          initialNotification: notification,
-          onDataChanged: onDataChanged,
+        builder: (context) => Scaffold(
+          appBar: CustomAppBar(
+            title: Text('Duplicate Notification'),
+          ),
+          body: CreateNotificationScreen(
+            initialNotification: notification,
+            onDataChanged: onDataChanged,
+          ),
         ),
       ),
     );
@@ -425,18 +423,15 @@ class NotificationDetailScreen extends StatelessWidget {
         data: notification.data,
         topic: notification.topic,
         condition: notification.condition,
-        tokens: notification.tokens,
+        token: notification.token,
       );
 
       final updatedNotification = notification.copyWith(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         createdAt: DateTime.now(),
         sent: success,
-        error: success ? null : 'Failed to send notification',
-        successCode: success ? '200' : null,
-        successMessage: success ? 'Notification resent successfully' : null,
-        errorCode: success ? null : null, // Will be set in catch block if error occurs
-        errorMessage: success ? null : null, // Will be set in catch block if error occurs
+        resultCode: success ? '200' : null,
+        resultMessage: success ? 'Notification resent successfully' : null,
       );
 
       await notificationStorage.saveNotification(updatedNotification);
@@ -453,17 +448,15 @@ class NotificationDetailScreen extends StatelessWidget {
         }
       }
     } catch (e) {
-      // Parse error to extract JSON error if available
-      final errorString = ErrorUtils.parseError(e);
+      // Parse error to extract code and message
       final errorData = ErrorUtils.extractErrorCodeAndMessage(e);
       
       final updatedNotification = notification.copyWith(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         createdAt: DateTime.now(),
         sent: false,
-        error: errorString,
-        errorCode: errorData?['code'],
-        errorMessage: errorData?['message'],
+        resultCode: errorData?['code'],
+        resultMessage: errorData?['message'],
       );
 
       await notificationStorage.saveNotification(updatedNotification);
@@ -471,7 +464,7 @@ class NotificationDetailScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(updatedNotification.errorMessage ?? errorString),
+            content: Text(updatedNotification.resultMessage ?? 'Error occurred'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

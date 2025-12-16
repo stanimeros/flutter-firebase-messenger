@@ -139,17 +139,16 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                           margin: EdgeInsets.zero,
                           child: ListTile(
                             leading: _buildAppImage(notification.app),
-                            title: Text(notification.nickname ?? notification.title),
+                            title: Text(notification.nickname),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (notification.nickname != null && notification.nickname!.isNotEmpty)
-                                  Text(
-                                    notification.title,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                    ),
+                                Text(
+                                  notification.title,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                                   ),
+                                ),
                                 Text(
                                   notification.createdAt.toLocal().toString().split('.')[0],
                                   style: Theme.of(context).textTheme.bodySmall,

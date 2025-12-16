@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:fire_message/models/app_model.dart';
 
 class NotificationModel {
@@ -10,15 +9,12 @@ class NotificationModel {
   final Map<String, dynamic>? data;
   final String? topic;
   final String? condition;
-  final List<String>? tokens;
+  final String? token;
   final DateTime createdAt;
   final bool sent;
-  final String? error; // Kept for backward compatibility
-  final String? nickname;
-  final String? errorCode;
-  final String? errorMessage;
-  final String? successCode;
-  final String? successMessage;
+  final String nickname;
+  final String? resultCode;
+  final String? resultMessage;
 
   NotificationModel({
     required this.id,
@@ -29,15 +25,12 @@ class NotificationModel {
     this.data,
     this.topic,
     this.condition,
-    this.tokens,
+    this.token,
     required this.createdAt,
     this.sent = false,
-    this.error,
-    this.nickname,
-    this.errorCode,
-    this.errorMessage,
-    this.successCode,
-    this.successMessage,
+    required this.nickname,
+    this.resultCode,
+    this.resultMessage,
   });
 
   Map<String, dynamic> toJson() {
@@ -50,34 +43,16 @@ class NotificationModel {
       'data': data,
       'topic': topic,
       'condition': condition,
-      'tokens': tokens,
+      'token': token,
       'createdAt': createdAt.toIso8601String(),
       'sent': sent,
-      'error': error,
       'nickname': nickname,
-      'errorCode': errorCode,
-      'errorMessage': errorMessage,
-      'successCode': successCode,
-      'successMessage': successMessage,
+      'resultCode': resultCode,
+      'resultMessage': resultMessage,
     };
   }
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
-    final error = json['error'] as String?;
-    String? errorCode;
-    String? errorMessage;
-    
-    // Parse error JSON if available to extract code and message
-    if (error != null) {
-      try {
-        final errorJson = jsonDecode(error) as Map<String, dynamic>;
-        errorCode = errorJson['error']?['code']?.toString() ?? errorJson['code']?.toString();
-        errorMessage = errorJson['error']?['message']?.toString() ?? errorJson['message']?.toString();
-      } catch (e) {
-        // Not JSON, keep as is
-      }
-    }
-    
     return NotificationModel(
       id: json['id'] as String,
       app: AppModel.fromJson(json['app'] as Map<String, dynamic>),
@@ -87,15 +62,12 @@ class NotificationModel {
       data: json['data'] as Map<String, dynamic>?,
       topic: json['topic'] as String?,
       condition: json['condition'] as String?,
-      tokens: json['tokens'] != null ? List<String>.from(json['tokens']) : null,
+      token: json['token'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       sent: json['sent'] as bool? ?? false,
-      error: error,
-      nickname: json['nickname'] as String?,
-      errorCode: json['errorCode'] as String? ?? errorCode,
-      errorMessage: json['errorMessage'] as String? ?? errorMessage,
-      successCode: json['successCode'] as String?,
-      successMessage: json['successMessage'] as String?,
+      nickname: json['nickname'] as String? ?? '',
+      resultCode: json['resultCode'] as String?,
+      resultMessage: json['resultMessage'] as String?,
     );
   }
 
@@ -108,15 +80,12 @@ class NotificationModel {
     Map<String, dynamic>? data,
     String? topic,
     String? condition,
-    List<String>? tokens,
+    String? token,
     DateTime? createdAt,
     bool? sent,
-    String? error,
     String? nickname,
-    String? errorCode,
-    String? errorMessage,
-    String? successCode,
-    String? successMessage,
+    String? resultCode,
+    String? resultMessage,
   }) {
     return NotificationModel(
       id: id ?? this.id,
@@ -127,15 +96,12 @@ class NotificationModel {
       data: data ?? this.data,
       topic: topic ?? this.topic,
       condition: condition ?? this.condition,
-      tokens: tokens ?? this.tokens,
+      token: token ?? this.token,
       createdAt: createdAt ?? this.createdAt,
       sent: sent ?? this.sent,
-      error: error ?? this.error,
       nickname: nickname ?? this.nickname,
-      errorCode: errorCode ?? this.errorCode,
-      errorMessage: errorMessage ?? this.errorMessage,
-      successCode: successCode ?? this.successCode,
-      successMessage: successMessage ?? this.successMessage,
+      resultCode: resultCode ?? this.resultCode,
+      resultMessage: resultMessage ?? this.resultMessage,
     );
   }
 }

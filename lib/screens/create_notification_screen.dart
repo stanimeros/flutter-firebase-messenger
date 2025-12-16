@@ -70,7 +70,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     _titleController.text = notification.title;
     _bodyController.text = notification.body;
     _imageUrlController.text = notification.imageUrl ?? '';
-    _nicknameController.text = notification.nickname ?? '';
+    _nicknameController.text = notification.nickname;
     if (notification.data != null) {
       _customData.clear();
       _customData.addAll(Map<String, String>.from(
@@ -109,10 +109,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             _selectedTopic = null;
           });
         }
-      } else if (notification.tokens != null && notification.tokens!.isNotEmpty) {
-        final token = notification.tokens!.first;
+      } else if (notification.token != null && notification.token!.isNotEmpty) {
         final device = _devices.firstWhere(
-          (d) => d.notificationToken == token,
+          (d) => d.notificationToken == notification.token,
           orElse: () => _devices.first,
         );
         setState(() {
@@ -358,10 +357,10 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       // Determine topic or condition string
       String? topic;
       String? condition;
-      List<String>? tokens;
+      String? token;
       
       if (_selectedDevice != null) {
-        tokens = [_selectedDevice!.notificationToken];
+        token = _selectedDevice!.notificationToken;
       } else if (_selectedTopic != null) {
         topic = _selectedTopic!.name;
       } else if (_selectedCondition != null) {
@@ -377,9 +376,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         data: _customData.isEmpty ? null : _customData,
         topic: topic,
         condition: condition,
-        tokens: tokens,
+        token: token,
         createdAt: DateTime.now(),
-        nickname: _nicknameController.text.trim().isEmpty ? null : _nicknameController.text.trim(),
+        nickname: _nicknameController.text.trim(),
       );
 
       final success = await _fcmService.sendNotification(
@@ -390,14 +389,14 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         data: notification.data,
         topic: notification.topic,
         condition: notification.condition,
-        tokens: notification.tokens,
+        token: notification.token,
       );
 
+      final errorData = success ? null : ErrorUtils.extractErrorCodeAndMessage(Exception('Failed to send notification'));
       final savedNotification = notification.copyWith(
         sent: success,
-        error: success ? null : 'Failed to send notification',
-        successCode: success ? '200' : null,
-        successMessage: success ? 'Notification sent successfully' : null,
+        resultCode: success ? '200' : errorData?['code'],
+        resultMessage: success ? 'Notification sent successfully' : errorData?['message'],
       );
 
       await _notificationStorage.saveNotification(savedNotification);
@@ -430,18 +429,17 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       // Determine topic or condition string
       String? topic;
       String? condition;
-      List<String>? tokens;
+      String? token;
       
       if (_selectedDevice != null) {
-        tokens = [_selectedDevice!.notificationToken];
+        token = _selectedDevice!.notificationToken;
       } else if (_selectedTopic != null) {
         topic = _selectedTopic!.name;
       } else if (_selectedCondition != null) {
         condition = _selectedCondition!.buildConditionString(_topics, _conditions);
       }
       
-      // Parse error to extract JSON error if available
-      String? errorString = ErrorUtils.parseError(e);
+      // Parse error to extract code and message
       final errorData = ErrorUtils.extractErrorCodeAndMessage(e);
       
       final notification = NotificationModel(
@@ -453,13 +451,12 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         data: _customData.isEmpty ? null : _customData,
         topic: topic,
         condition: condition,
-        tokens: tokens,
+        token: token,
         createdAt: DateTime.now(),
         sent: false,
-        error: errorString,
-        nickname: _nicknameController.text.trim().isEmpty ? null : _nicknameController.text.trim(),
-        errorCode: errorData?['code'],
-        errorMessage: errorData?['message'],
+        nickname: _nicknameController.text.trim(),
+        resultCode: errorData?['code'],
+        resultMessage: errorData?['message'],
       );
 
       await _notificationStorage.saveNotification(notification);
@@ -467,7 +464,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(notification.errorMessage ?? errorString),
+            content: Text(notification.resultMessage ?? 'Error occurred'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -522,6 +519,22 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
+                      controller: _nicknameController,
+                      enabled: _selectedApp != null,
+                      decoration: const InputDecoration(
+                        labelText: 'Nickname',
+                        hintText: 'e.g., Welcome Message, Daily Reminder',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a nickname';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
                       controller: _titleController,
                       enabled: _selectedApp != null,
                       decoration: const InputDecoration(
@@ -563,16 +576,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.url,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _nicknameController,
-                      enabled: _selectedApp != null,
-                      decoration: const InputDecoration(
-                        labelText: 'Nickname (Optional)',
-                        hintText: 'e.g., Welcome Message, Daily Reminder',
-                        border: OutlineInputBorder(),
-                      ),
                     ),
                   ],
                 ),
@@ -687,39 +690,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           ],
         ),
       ),
-    );
-  }
-}
-
-extension NotificationModelExtension on NotificationModel {
-  NotificationModel copyWith({
-    String? id,
-    String? appId,
-    String? appName,
-    String? title,
-    String? body,
-    String? imageUrl,
-    Map<String, dynamic>? data,
-    String? topic,
-    String? condition,
-    List<String>? tokens,
-    DateTime? createdAt,
-    bool? sent,
-    String? error,
-  }) {
-    return NotificationModel(
-      id: id ?? this.id,
-      app: app,
-      title: title ?? this.title,
-      body: body ?? this.body,
-      imageUrl: imageUrl ?? this.imageUrl,
-      data: data ?? this.data,
-      topic: topic ?? this.topic,
-      condition: condition ?? this.condition,
-      tokens: tokens ?? this.tokens,
-      createdAt: createdAt ?? this.createdAt,
-      sent: sent ?? this.sent,
-      error: error ?? this.error,
     );
   }
 }
