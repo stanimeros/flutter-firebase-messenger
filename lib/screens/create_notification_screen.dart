@@ -10,6 +10,7 @@ import '../models/condition_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
 import '../services/fcm_service.dart';
+import '../widgets/custom_app_theme.dart';
 
 class CreateNotificationScreen extends StatefulWidget {
   final void Function(VoidCallback)? onRefreshCallback;
@@ -687,17 +688,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                         alignment: Alignment.centerLeft,
                       ),
                     ),
-                    if (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Please select a device, topic, or condition',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -706,7 +696,8 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             ActionSlider.standard(
               width: double.infinity,
               height: 56,
-              backgroundColor: Theme.of(context).colorScheme.surface,
+              backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+              toggleColor: CustomAppTheme.primaryCyan,
               action: (controller) async {
                 if (_selectedApp == null || 
                     (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null)) {
@@ -722,13 +713,12 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const HeroIcon(HeroIcons.paperAirplane, size: 20),
-                  const SizedBox(width: 12),
                   const Text(
                     'Slide to Send',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
                 ],

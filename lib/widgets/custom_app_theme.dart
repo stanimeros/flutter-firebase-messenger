@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class CustomAppTheme {
   // Logo-inspired colors (based on purple-blue-cyan gradient)
-  static const Color primaryCyan = Color(0xFF00D9FF); // Bright cyan glow
+  static const Color primaryCyan = Color.fromARGB(255, 0, 152, 179); // Bright cyan glow
   static const Color primaryBlue = Color(0xFF3B82F6); // Vibrant blue
   static const Color primaryPurple = Color(0xFF7C3AED); // Deep purple
   
@@ -13,7 +13,7 @@ class CustomAppTheme {
   static const Color darkCardSurface = Color.fromARGB(255, 29, 29, 29);
   static const Color darkOnSurface = Color(0xFFE0E0E0);
   static const Color darkOnPrimary = Color(0xFF000000);
-  static const Color darkError = Color(0xFFEF4444);
+  static const Color darkError = Color(0xFFDC2626); // More red error color
 
   static ThemeData get darkTheme {
     return ThemeData(
@@ -24,6 +24,7 @@ class CustomAppTheme {
         brightness: Brightness.dark,
       ).copyWith(
         surface: darkSurface,
+        error: darkError,
       ),
       scaffoldBackgroundColor: darkBackground,
       appBarTheme: AppBarTheme(
@@ -78,7 +79,7 @@ class CustomAppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryCyan,
-          foregroundColor: darkOnPrimary,
+          foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
@@ -101,7 +102,9 @@ class CustomAppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primaryCyan,
+        foregroundColor: Colors.white,
         elevation: 2,
       ),
       dialogTheme: DialogThemeData(

@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
+import 'package:action_slider/action_slider.dart';
 import '../models/notification_model.dart';
 import '../services/notification_storage_service.dart';
 import '../services/fcm_service.dart';
 import 'create_notification_screen.dart';
+import '../widgets/custom_app_theme.dart';
 
 class NotificationDetailScreen extends StatelessWidget {
   final NotificationModel notification;
@@ -258,7 +260,7 @@ class NotificationDetailScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: notification.sent ? null : () => _resendNotification(context),
+                    onPressed: notification.sent ? null : () => _showResendConfirmation(context),
                     icon: const HeroIcon(HeroIcons.paperAirplane),
                     label: const Text('Resend'),
                   ),
@@ -364,6 +366,77 @@ class NotificationDetailScreen extends StatelessWidget {
     );
   }
 
+  void _showResendConfirmation(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Resend Notification',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const HeroIcon(HeroIcons.xMark),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Are you sure you want to resend this notification?',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ActionSlider.standard(
+              width: double.infinity,
+              height: 56,
+              backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+              toggleColor: CustomAppTheme.primaryCyan,
+              action: (controller) async {
+                controller.loading();
+                await _resendNotification(context);
+                if (context.mounted) {
+                  controller.success();
+                  await Future.delayed(const Duration(seconds: 1));
+                  Navigator.pop(context); // Close bottom sheet
+                  controller.reset();
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Slide to Resend',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _resendNotification(BuildContext context) async {
     final fcmService = FCMService();
     final notificationStorage = NotificationStorageService();
@@ -390,14 +463,15 @@ class NotificationDetailScreen extends StatelessWidget {
       await notificationStorage.saveNotification(updatedNotification);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? 'Notification resent successfully' : 'Failed to resend notification'),
-            backgroundColor: success ? Colors.green : Theme.of(context).colorScheme.error,
-          ),
-        );
-        onDataChanged?.call();
-        Navigator.pop(context);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success ? 'Notification resent successfully' : 'Failed to resend notification'),
+              backgroundColor: success ? Colors.green : Theme.of(context).colorScheme.error,
+            ),
+          );
+          onDataChanged?.call();
+        }
       }
     } catch (e) {
       // Parse error to extract JSON error if available
