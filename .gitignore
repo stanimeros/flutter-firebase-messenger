@@ -49,3 +49,6 @@ app.*.map.json
 /private_keys
 
 deploy.yaml
+
+# Environment variables
+.env

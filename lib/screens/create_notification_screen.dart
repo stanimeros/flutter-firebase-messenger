@@ -9,6 +9,7 @@ import '../models/condition_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
 import '../services/messaging_service.dart';
+import '../services/gemini_service.dart';
 import '../widgets/custom_app_theme.dart';
 import '../utils/tools.dart';
 
@@ -41,6 +42,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   final _appStorage = AppStorageService();
   final _notificationStorage = NotificationStorageService();
   final _messagingService = MessagingService();
+  final _geminiService = GeminiService();
 
   List<AppModel> _apps = [];
   AppModel? _selectedApp;
@@ -58,6 +60,13 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   @override
   void initState() {
     super.initState();
+    // Add listeners to text controllers to rebuild when text changes
+    _titleController.addListener(() {
+      setState(() {});
+    });
+    _bodyController.addListener(() {
+      setState(() {});
+    });
     widget.onRefreshCallback?.call(_refresh);
     _loadApps().then((_) {
       if (widget.initialNotification != null) {
@@ -170,6 +179,27 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         _selectedTopic = null;
         _selectedDevice = null;
         _selectedCondition = null;
+      });
+    }
+  }
+
+  Future<void> _showRefineDialog(String fieldType, String originalText) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => _RefineDialog(
+        fieldType: fieldType,
+        originalText: originalText,
+        geminiService: _geminiService,
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        if (fieldType == 'title') {
+          _titleController.text = result;
+        } else {
+          _bodyController.text = result;
+        }
       });
     }
   }
@@ -607,37 +637,97 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _titleController,
-                      enabled: _selectedApp != null,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        hintText: 'Notification title',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter title';
-                        }
-                        return null;
-                      },
+                    Stack(
+                      children: [
+                        TextFormField(
+                          controller: _titleController,
+                          enabled: _selectedApp != null,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            hintText: 'Notification title',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.only(right: 48, top: 16, bottom: 16, left: 16),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter title';
+                            }
+                            return null;
+                          },
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: _titleController,
+                            builder: (context, value, child) {
+                              final isEnabled = _selectedApp != null && value.text.isNotEmpty;
+                              return IconButton(
+                                icon: HeroIcon(
+                                  HeroIcons.sparkles,
+                                  color: isEnabled
+                                      ? null
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                                ),
+                                onPressed: isEnabled
+                                    ? () => _showRefineDialog('title', _titleController.text)
+                                    : null,
+                                tooltip: 'Refine title',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                visualDensity: VisualDensity.compact,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _bodyController,
-                      enabled: _selectedApp != null,
-                      decoration: const InputDecoration(
-                        labelText: 'Body',
-                        hintText: 'Notification body text',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter body';
-                        }
-                        return null;
-                      },
+                    Stack(
+                      children: [
+                        TextFormField(
+                          controller: _bodyController,
+                          enabled: _selectedApp != null,
+                          decoration: const InputDecoration(
+                            labelText: 'Body',
+                            hintText: 'Notification body text',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.only(right: 48, top: 16, bottom: 16, left: 16),
+                          ),
+                          maxLines: 3,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter body';
+                            }
+                            return null;
+                          },
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: _bodyController,
+                            builder: (context, value, child) {
+                              final isEnabled = _selectedApp != null && value.text.isNotEmpty;
+                              return IconButton(
+                                icon: HeroIcon(
+                                  HeroIcons.sparkles,
+                                  color: isEnabled
+                                      ? null
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                                ),
+                                onPressed: isEnabled
+                                    ? () => _showRefineDialog('body', _bodyController.text)
+                                    : null,
+                                tooltip: 'Refine body',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                visualDensity: VisualDensity.compact,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -802,6 +892,164 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RefineDialog extends StatefulWidget {
+  final String fieldType;
+  final String originalText;
+  final GeminiService geminiService;
+
+  const _RefineDialog({
+    required this.fieldType,
+    required this.originalText,
+    required this.geminiService,
+  });
+
+  @override
+  State<_RefineDialog> createState() => _RefineDialogState();
+}
+
+class _RefineDialogState extends State<_RefineDialog> {
+  final _resultController = TextEditingController();
+  final _promptController = TextEditingController();
+  bool _isGenerating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resultController.text = widget.originalText;
+    _promptController.text = 'Refine the following notification ${widget.fieldType == 'title' ? 'title' : 'body'}, make it more engaging and use emojis where appropriate. ${widget.fieldType == 'title' ? 'Keep it concise and attention-grabbing.' : 'Keep it clear and compelling.'} Return only the refined ${widget.fieldType == 'title' ? 'title' : 'body'} without any additional text:';
+  }
+
+  @override
+  void dispose() {
+    _resultController.dispose();
+    _promptController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _generateRefinedText() async {
+    setState(() {
+      _isGenerating = true;
+    });
+
+    try {
+      final refinedText = await widget.geminiService.refineText(
+        widget.originalText,
+        _promptController.text.trim(),
+      );
+
+      if (refinedText != null && mounted) {
+        setState(() {
+          _resultController.text = refinedText;
+          _isGenerating = false;
+        });
+      } else {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('No response from Gemini'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        debugPrint('Error: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const HeroIcon(HeroIcons.sparkles, size: 24),
+          const SizedBox(width: 8),
+          Text('Refine ${widget.fieldType == 'title' ? 'Title' : 'Body'}'),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Text: ${widget.originalText}',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _promptController,
+              decoration: const InputDecoration(
+                labelText: 'Prompt',
+                hintText: 'Enter your prompt...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 4,
+              minLines: 3,
+              enabled: !_isGenerating,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _isGenerating ? null : _generateRefinedText,
+              icon: _isGenerating
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const HeroIcon(HeroIcons.sparkles, size: 20),
+              label: Text(_isGenerating ? 'Generating...' : 'Generate'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: CustomAppTheme.primaryCyan,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _resultController,
+              decoration: InputDecoration(
+                labelText: 'Result',
+                hintText: 'Refined text will appear here...',
+                border: const OutlineInputBorder(),
+                enabled: !_isGenerating,
+              ),
+              maxLines: widget.fieldType == 'title' ? 2 : 5,
+              minLines: widget.fieldType == 'title' ? 1 : 3,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _resultController.text.trim().isEmpty
+              ? null
+              : () => Navigator.pop(context, _resultController.text.trim()),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: CustomAppTheme.primaryCyan,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }

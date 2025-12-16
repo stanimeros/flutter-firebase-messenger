@@ -2,20 +2,33 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/main_screen.dart';
 import 'screens/paywall_screen.dart';
 import 'widgets/custom_app_theme.dart';
 
 const String _entitlementId = 'premium';
-const String _androidApiKey = 'test_ZTunwknVYEPYcHIlWPKWveGKtXt';
-const String _iosApiKey = 'appl_xwaRyxxnbszykyrzROUEarNpcVn';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Load environment variables
   try {
-    final apiKey = Platform.isIOS ? _iosApiKey : _androidApiKey;
-    await Purchases.configure(PurchasesConfiguration(apiKey));
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('Warning: Could not load .env file: $e');
+  }
+  
+  try {
+    final apiKey = Platform.isIOS 
+        ? dotenv.env['RC_IOS_API_KEY'] ?? ''
+        : dotenv.env['RC_ANDROID_API_KEY'] ?? '';
+    
+    if (apiKey.isEmpty) {
+      debugPrint('Warning: RevenueCat API key not found in .env file');
+    } else {
+      await Purchases.configure(PurchasesConfiguration(apiKey));
+    }
   } catch (e) {
     debugPrint('Failed to initialize Purchases: $e');
   }

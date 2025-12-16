@@ -101,5 +101,6 @@ String formatDate(DateTime date) {
   final year = localDate.year.toString();
   final hour = localDate.hour.toString().padLeft(2, '0');
   final minute = localDate.minute.toString().padLeft(2, '0');
-  return '$day/$month/$year $hour:$minute';
+  final second = localDate.second.toString().padLeft(2, '0');
+  return '$day/$month/$year $hour:$minute:$second';
 }
