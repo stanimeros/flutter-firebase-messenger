@@ -212,12 +212,14 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   Future<void> _showTargetSelector() async {
     await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -328,7 +330,8 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -642,13 +645,52 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _selectedApp != null ? _showTargetSelector : null,
-                      icon: const HeroIcon(HeroIcons.chevronDown),
-                      label: Text(_getSelectedTargetText()),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        alignment: Alignment.centerLeft,
+                    InkWell(
+                      onTap: _selectedApp != null ? _showTargetSelector : null,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _selectedApp != null
+                                ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)
+                                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            if (_selectedDevice != null)
+                              const HeroIcon(HeroIcons.devicePhoneMobile, size: 20)
+                            else if (_selectedTopic != null)
+                              const HeroIcon(HeroIcons.hashtag, size: 20)
+                            else if (_selectedCondition != null)
+                              const HeroIcon(HeroIcons.funnel, size: 20)
+                            else
+                              HeroIcon(
+                                HeroIcons.cursorArrowRays,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _getSelectedTargetText(),
+                                style: TextStyle(
+                                  color: _selectedApp != null
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            HeroIcon(
+                              HeroIcons.chevronDown,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

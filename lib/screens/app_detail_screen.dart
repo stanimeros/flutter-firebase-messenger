@@ -357,8 +357,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    HeroIcon(HeroIcons.devicePhoneMobile, size: 18),
-                    SizedBox(width: 6),
+                    HeroIcon(HeroIcons.devicePhoneMobile, size: 15),
+                    SizedBox(width: 4),
                     Text('Devices'),
                   ],
                 ),
@@ -368,8 +368,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    HeroIcon(HeroIcons.hashtag, size: 18),
-                    SizedBox(width: 6),
+                    HeroIcon(HeroIcons.hashtag, size: 15),
+                    SizedBox(width: 4),
                     Text('Topics'),
                   ],
                 ),
@@ -379,8 +379,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    HeroIcon(HeroIcons.funnel, size: 18),
-                    SizedBox(width: 6),
+                    HeroIcon(HeroIcons.funnel, size: 15),
+                    SizedBox(width: 4),
                     Text('Conditions'),
                   ],
                 ),
@@ -577,6 +577,39 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     );
   }
 
+  String _buildConditionSubtitle(ConditionModel condition) {
+    final parts = <String>[];
+    
+    // Add topic names
+    for (final topicId in condition.topicIds) {
+      final topic = _topics.firstWhere(
+        (t) => t.id == topicId,
+        orElse: () => TopicModel(id: '', name: '', createdAt: DateTime.now()),
+      );
+      if (topic.id.isNotEmpty) {
+        parts.add(topic.name);
+      }
+    }
+    
+    // Add nested condition names
+    for (final conditionId in condition.conditionIds) {
+      final nestedCondition = _conditions.firstWhere(
+        (c) => c.id == conditionId,
+        orElse: () => ConditionModel(id: '', name: '', operator: 'AND', createdAt: DateTime.now()),
+      );
+      if (nestedCondition.id.isNotEmpty) {
+        parts.add(nestedCondition.name);
+      }
+    }
+    
+    if (parts.isEmpty) {
+      return 'No topics or conditions';
+    }
+    
+    final operator = condition.operator == 'AND' ? ' AND ' : ' OR ';
+    return parts.join(operator);
+  }
+
   Widget _buildConditionsTab() {
     if (_conditions.isEmpty) {
       return Center(
@@ -646,7 +679,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
               ),
               title: Text(condition.name),
               subtitle: Text(
-                '${condition.topicIds.length} topics, ${condition.conditionIds.length} conditions',
+                _buildConditionSubtitle(condition),
               ),
               trailing: IconButton(
                 icon: const HeroIcon(HeroIcons.pencil),

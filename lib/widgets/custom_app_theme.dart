@@ -36,11 +36,11 @@ class CustomAppTheme {
         labelColor: primaryCyan,
         unselectedLabelColor: darkOnSurface.withValues(alpha: 0.6),
         labelStyle: GoogleFonts.poppins(
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
         unselectedLabelStyle: GoogleFonts.poppins(
-          fontSize: 14,
+          fontSize: 15,
           fontWeight: FontWeight.normal,
         ),
       ),

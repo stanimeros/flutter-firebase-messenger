@@ -5,6 +5,7 @@ import '../models/notification_model.dart';
 import '../models/app_model.dart';
 import '../services/notification_storage_service.dart';
 import 'notification_detail_screen.dart';
+import '../utils/tools.dart';
 
 class HistoryScreen extends StatefulWidget {
   final void Function(VoidCallback)? onRefreshCallback;
@@ -140,20 +141,9 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                           child: ListTile(
                             leading: _buildAppImage(notification.app),
                             title: Text(notification.nickname),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  notification.title,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                                Text(
-                                  notification.createdAt.toLocal().toString().split('.')[0],
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                            subtitle: Text(
+                              formatDate(notification.createdAt),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                             trailing: _buildStatusIcon(notification.sent),
                             onTap: () {

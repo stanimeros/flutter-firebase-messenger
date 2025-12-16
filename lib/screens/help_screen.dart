@@ -111,40 +111,14 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.plusCircle, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Creating Apps',
+                        'Apps',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '1. Navigate to the Apps tab',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Tap the + button (Floating Action Button) to create a new app.',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '2. Fill in App Information',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '• App Name: Enter a descriptive name\n'
-                    '• Package Name: Enter the package name (e.g., com.example.app)\n'
-                    '• Logo: Optionally select an image file\n'
-                    '• JSON File: Select your Firebase service account JSON file (required)',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '3. Save the App',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Tap "Save App" to store your app configuration. The JSON file is securely encrypted on your device.',
+                    'Tap + to create an app. Enter name, package name, and upload Firebase service account JSON. Swipe left to delete.',
                   ),
                 ],
               ),
@@ -162,37 +136,18 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.hashtag, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Managing Topics & Devices',
+                        'Devices, Topics & Conditions',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '1. Open App Details',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Tap on any app from the Apps tab to view its details.',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '2. Add Topics',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'In the Topics tab, tap the + button and enter a topic name. Topics allow you to send messages to groups of devices subscribed to that topic.',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '3. Add Devices',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'In the Devices tab, tap the + button and enter a device name with their FCM device token. Devices represent individual devices that can receive notifications.',
+                    'Open an app to manage:\n'
+                    '• Devices: Add device tokens\n'
+                    '• Topics: Create topic groups\n'
+                    '• Conditions: Combine topics/conditions with AND/OR\n'
+                    'Tap + in each tab to add. Swipe left to delete. Tap edit icon to modify.',
                   ),
                 ],
               ),
@@ -210,59 +165,19 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.bell, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Creating Notifications',
+                        'Notifications',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '1. Select an App',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Navigate to the Create tab and select an app from the dropdown.',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '2. Enter Notification Details',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '• Title: The notification title (required)\n'
-                    '• Body: The notification message text (required)',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '3. Choose Recipients',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Toggle between Topics or Devices, then select:\n'
-                    '• One Topic: Send to all devices subscribed to that topic\n'
-                    '• One Device: Send to a specific device\n'
-                    'Note: You must select either a topic OR a device (required).',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '4. Add Custom Data (Optional)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Add custom key-value pairs that will be sent with the notification.',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '5. Send Notification',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Tap "Send Notification" to deliver the message. The notification will be saved to history with its delivery status.',
+                    '1. Select app\n'
+                    '2. Enter nickname (required)\n'
+                    '3. Enter title and body\n'
+                    '4. Select target (device, topic, or condition)\n'
+                    '5. Add image URL or custom data (optional)\n'
+                    '6. Slide to send',
                   ),
                 ],
               ),
@@ -280,24 +195,14 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.clock, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Viewing History',
+                        'History',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   const Text(
-                    'The History tab shows all notifications you\'ve sent. Expand any notification to see:\n'
-                    '• Sent status (success or failed)\n'
-                    '• App name and details\n'
-                    '• Notification content\n'
-                    '• Recipients (topic or user)\n'
-                    '• Timestamp\n'
-                    '• Error messages (if any)',
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Swipe left on any notification to delete it.',
+                    'View all sent notifications with nickname and timestamp. Tap to see details, duplicate, or resend. Swipe left to delete.',
                   ),
                 ],
               ),
@@ -315,16 +220,14 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                       const HeroIcon(HeroIcons.shieldCheck, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Security Notes',
+                        'Security',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   const Text(
-                    '• Firebase service account JSON files are encrypted and stored securely\n'
-                    '• Never share your service account credentials\n'
-                    '• Device tokens should be kept private',
+                    'Service account JSON files are encrypted and stored securely on your device.',
                   ),
                 ],
               ),

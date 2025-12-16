@@ -22,7 +22,7 @@ class NotificationDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: CustomAppBar(
         title: Text(notification.nickname),
       ),
       body: SingleChildScrollView(
@@ -50,15 +50,6 @@ class NotificationDetailScreen extends StatelessWidget {
               notification.body,
               icon: HeroIcons.chatBubbleLeftRight,
             ),
-            if (notification.nickname.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _buildInfoCard(
-                context,
-                'Nickname',
-                notification.nickname,
-                icon: HeroIcons.tag,
-              ),
-            ],
             if (notification.imageUrl != null && notification.imageUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildInfoCard(
@@ -183,7 +174,7 @@ class NotificationDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              notification.createdAt.toLocal().toString().split('.')[0],
+                              formatDate(notification.createdAt),
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                               ),
