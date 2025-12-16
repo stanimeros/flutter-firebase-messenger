@@ -860,13 +860,27 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                if (_selectedApp == null || 
-                    (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null)) {
+                // Validate form fields first
+                if (!_formKey.currentState!.validate()) {
+                  return;
+                }
+                
+                // Validate app selection
+                if (_selectedApp == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please select an app and target')),
+                    const SnackBar(content: Text('Please select an app')),
                   );
                   return;
                 }
+                
+                // Validate target selection
+                if (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please select a device, topic, or condition')),
+                  );
+                  return;
+                }
+                
                 _showSendConfirmation();
               },
               style: ElevatedButton.styleFrom(
