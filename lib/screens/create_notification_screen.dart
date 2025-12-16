@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
+import 'package:action_slider/action_slider.dart';
 import '../models/app_model.dart';
 import '../models/notification_model.dart';
 import '../models/topic_model.dart';
 import '../models/user_model.dart';
+import '../models/condition_model.dart';
 import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
 import '../services/fcm_service.dart';
@@ -38,12 +40,15 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   List<AppModel> _apps = [];
   AppModel? _selectedApp;
   List<TopicModel> _topics = [];
-  List<UserModel> _users = [];
+  List<UserModel> _devices = [];
+  List<ConditionModel> _conditions = [];
+  
+  // Selected target (one of: device, topic, or condition)
+  UserModel? _selectedDevice;
   TopicModel? _selectedTopic;
-  UserModel? _selectedUser;
-  bool _isLoading = false;
+  ConditionModel? _selectedCondition;
+  
   final Map<String, String> _customData = {};
-  bool _useTopics = true; // true for topics, false for users
 
   @override
   void initState() {
@@ -80,21 +85,25 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   }
 
   Future<void> _loadAppData(AppModel app) async {
-    // Reload app to get latest topics and users
+    // Reload app to get latest topics, devices, and conditions
     final updatedApp = await _appStorage.getAppById(app.id);
     if (updatedApp != null) {
       setState(() {
         _topics = updatedApp.topics;
-        _users = updatedApp.users;
+        _devices = updatedApp.devices;
+        _conditions = updatedApp.conditions;
         _selectedTopic = null;
-        _selectedUser = null;
+        _selectedDevice = null;
+        _selectedCondition = null;
       });
     } else {
       setState(() {
         _topics = app.topics;
-        _users = app.users;
+        _devices = app.devices;
+        _conditions = app.conditions;
         _selectedTopic = null;
-        _selectedUser = null;
+        _selectedDevice = null;
+        _selectedCondition = null;
       });
     }
   }
@@ -123,6 +132,142 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     });
   }
 
+  String _getSelectedTargetText() {
+    if (_selectedDevice != null) {
+      return 'Device: ${_selectedDevice!.name}';
+    } else if (_selectedTopic != null) {
+      return 'Topic: ${_selectedTopic!.name}';
+    } else if (_selectedCondition != null) {
+      return 'Condition: ${_selectedCondition!.name}';
+    }
+    return 'Select target...';
+  }
+
+  Future<void> _showTargetSelector() async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Select Target',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                IconButton(
+                  icon: const HeroIcon(HeroIcons.xMark),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Devices section
+            if (_devices.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Devices',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              ..._devices.map((device) => ListTile(
+                leading: const HeroIcon(HeroIcons.devicePhoneMobile, size: 20),
+                title: Text(device.name),
+                subtitle: Text(
+                  device.notificationToken,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                selected: _selectedDevice?.id == device.id,
+                onTap: () {
+                  setState(() {
+                    _selectedDevice = device;
+                    _selectedTopic = null;
+                    _selectedCondition = null;
+                  });
+                  Navigator.pop(context);
+                },
+              )),
+              const Divider(),
+            ],
+            // Topics section
+            if (_topics.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, top: 8),
+                child: Text(
+                  'Topics',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              ..._topics.map((topic) => ListTile(
+                leading: const HeroIcon(HeroIcons.hashtag, size: 20),
+                title: Text(topic.name),
+                selected: _selectedTopic?.id == topic.id,
+                onTap: () {
+                  setState(() {
+                    _selectedTopic = topic;
+                    _selectedDevice = null;
+                    _selectedCondition = null;
+                  });
+                  Navigator.pop(context);
+                },
+              )),
+              const Divider(),
+            ],
+            // Conditions section
+            if (_conditions.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, top: 8),
+                child: Text(
+                  'Conditions',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              ..._conditions.map((condition) => ListTile(
+                leading: CircleAvatar(
+                  radius: 12,
+                  child: Text(
+                    condition.operator,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                title: Text(condition.name),
+                subtitle: Text(
+                  '${condition.topicIds.length} topics, ${condition.conditionIds.length} nested',
+                ),
+                selected: _selectedCondition?.id == condition.id,
+                onTap: () {
+                  setState(() {
+                    _selectedCondition = condition;
+                    _selectedDevice = null;
+                    _selectedTopic = null;
+                  });
+                  Navigator.pop(context);
+                },
+              )),
+            ],
+            if (_devices.isEmpty && _topics.isEmpty && _conditions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Text(
+                    'No targets available',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Future<void> _sendNotification() async {
     if (!_formKey.currentState!.validate()) return;
@@ -133,12 +278,28 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a device, topic, or condition')),
+      );
+      return;
+    }
 
     try {
       final imageUrl = _imageUrlController.text.trim();
+      
+      // Determine topic or condition string
+      String? topic;
+      String? condition;
+      List<String>? tokens;
+      
+      if (_selectedDevice != null) {
+        tokens = [_selectedDevice!.notificationToken];
+      } else if (_selectedTopic != null) {
+        topic = _selectedTopic!.name;
+      } else if (_selectedCondition != null) {
+        condition = _selectedCondition!.buildConditionString(_topics, _conditions);
+      }
       
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -147,8 +308,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         body: _bodyController.text.trim(),
         imageUrl: imageUrl.isEmpty ? null : imageUrl,
         data: _customData.isEmpty ? null : _customData,
-        topic: _selectedTopic?.name,
-        tokens: _selectedUser == null ? null : [_selectedUser!.notificationToken],
+        topic: topic,
+        condition: condition,
+        tokens: tokens,
         createdAt: DateTime.now(),
       );
 
@@ -159,6 +321,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         imageUrl: notification.imageUrl,
         data: notification.data,
         topic: notification.topic,
+        condition: notification.condition,
         tokens: notification.tokens,
       );
 
@@ -182,11 +345,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           _bodyController.clear();
           _imageUrlController.clear();
           setState(() {
-            if (_useTopics) {
-              _selectedTopic = null;
-            } else {
-              _selectedUser = null;
-            }
+            _selectedDevice = null;
+            _selectedTopic = null;
+            _selectedCondition = null;
             _customData.clear();
           });
           widget.onDataChanged?.call();
@@ -195,6 +356,19 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
     } catch (e) {
       final imageUrl = _imageUrlController.text.trim();
       
+      // Determine topic or condition string
+      String? topic;
+      String? condition;
+      List<String>? tokens;
+      
+      if (_selectedDevice != null) {
+        tokens = [_selectedDevice!.notificationToken];
+      } else if (_selectedTopic != null) {
+        topic = _selectedTopic!.name;
+      } else if (_selectedCondition != null) {
+        condition = _selectedCondition!.buildConditionString(_topics, _conditions);
+      }
+      
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         app: _selectedApp!,
@@ -202,8 +376,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         body: _bodyController.text.trim(),
         imageUrl: imageUrl.isEmpty ? null : imageUrl,
         data: _customData.isEmpty ? null : _customData,
-        topic: _selectedTopic?.name,
-        tokens: _selectedUser == null ? null : [_selectedUser!.notificationToken],
+        topic: topic,
+        condition: condition,
+        tokens: tokens,
         createdAt: DateTime.now(),
         sent: false,
         error: e.toString(),
@@ -219,12 +394,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
           ),
         );
         widget.onDataChanged?.call();
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -376,118 +545,66 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Expanded(
-                          child: ToggleButtons(
-                            isSelected: [_useTopics, !_useTopics],
-                            constraints: BoxConstraints(minWidth: (MediaQuery.of(context).size.width - 64) / 2),
-                            onPressed: (index) {
-                              setState(() {
-                                _useTopics = index == 0;
-                                // Clear the other selection when switching
-                                if (_useTopics) {
-                                  _selectedUser = null;
-                                } else {
-                                  _selectedTopic = null;
-                                }
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            children: const [
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    HeroIcon(HeroIcons.hashtag, size: 16),
-                                    SizedBox(width: 8),
-                                    Text('Topics'),
-                                  ],
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    HeroIcon(HeroIcons.user, size: 16),
-                                    SizedBox(width: 8),
-                                    Text('Users'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Target',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
-                    if (_useTopics)
-                      DropdownButtonFormField<TopicModel?>(
-                        initialValue: _selectedTopic,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Topic',
-                          border: OutlineInputBorder(),
+                    OutlinedButton.icon(
+                      onPressed: _selectedApp != null ? _showTargetSelector : null,
+                      icon: const HeroIcon(HeroIcons.chevronDown),
+                      label: Text(_getSelectedTargetText()),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        alignment: Alignment.centerLeft,
+                      ),
+                    ),
+                    if (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Please select a device, topic, or condition',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
+                          ),
                         ),
-                        items: _topics.map((topic) => DropdownMenuItem<TopicModel?>(
-                          value: topic,
-                          child: Text(topic.name),
-                        )).toList(),
-                        onChanged: _topics.isNotEmpty ? (topic) {
-                          setState(() {
-                            _selectedTopic = topic;
-                          });
-                        } : null,
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select a topic';
-                          }
-                          return null;
-                        },
-                      )
-                    else
-                      DropdownButtonFormField<UserModel?>(
-                        initialValue: _selectedUser,
-                        decoration: const InputDecoration(
-                          labelText: 'Select User',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _users.map((user) => DropdownMenuItem<UserModel?>(
-                          value: user,
-                          child: Text(user.name),
-                        )).toList(),
-                        onChanged: _users.isNotEmpty ? (user) {
-                          setState(() {
-                            _selectedUser = user;
-                          });
-                        } : null,
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select a user';
-                          }
-                          return null;
-                        },
                       ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: (_selectedApp != null && 
-                         !_isLoading && 
-                         ((_useTopics && _selectedTopic != null) || (!_useTopics && _selectedUser != null))) 
-                  ? _sendNotification 
-                  : null,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Send Notification'),
+            const SizedBox(height: 16),
+            ActionSlider.standard(
+              width: double.infinity,
+              height: 56,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              action: (controller) async {
+                if (_selectedApp == null || 
+                    (_selectedDevice == null && _selectedTopic == null && _selectedCondition == null)) {
+                  controller.reset();
+                  return;
+                }
+                controller.loading();
+                await _sendNotification();
+                controller.success();
+                await Future.delayed(const Duration(seconds: 1));
+                controller.reset();
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const HeroIcon(HeroIcons.paperAirplane, size: 20),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Slide to Send',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -506,6 +623,7 @@ extension NotificationModelExtension on NotificationModel {
     String? imageUrl,
     Map<String, dynamic>? data,
     String? topic,
+    String? condition,
     List<String>? tokens,
     DateTime? createdAt,
     bool? sent,
@@ -519,6 +637,7 @@ extension NotificationModelExtension on NotificationModel {
       imageUrl: imageUrl ?? this.imageUrl,
       data: data ?? this.data,
       topic: topic ?? this.topic,
+      condition: condition ?? this.condition,
       tokens: tokens ?? this.tokens,
       createdAt: createdAt ?? this.createdAt,
       sent: sent ?? this.sent,

@@ -1,5 +1,6 @@
 import 'topic_model.dart';
 import 'user_model.dart';
+import 'condition_model.dart';
 
 class AppModel {
   final String id;
@@ -8,7 +9,8 @@ class AppModel {
   final String? imageData; // Base64 encoded image data
   final DateTime createdAt;
   final List<TopicModel> topics;
-  final List<UserModel> users;
+  final List<UserModel> devices; // Renamed from users
+  final List<ConditionModel> conditions;
 
   AppModel({
     required this.id,
@@ -17,9 +19,11 @@ class AppModel {
     this.imageData,
     required this.createdAt,
     List<TopicModel>? topics,
-    List<UserModel>? users,
+    List<UserModel>? devices,
+    List<ConditionModel>? conditions,
   })  : topics = topics ?? [],
-        users = users ?? [];
+        devices = devices ?? [],
+        conditions = conditions ?? [];
 
   Map<String, dynamic> toJson() {
     return {
@@ -29,7 +33,8 @@ class AppModel {
       'imageData': imageData,
       'createdAt': createdAt.toIso8601String(),
       'topics': topics.map((t) => t.toJson()).toList(),
-      'users': users.map((u) => u.toJson()).toList(),
+      'devices': devices.map((u) => u.toJson()).toList(),
+      'conditions': conditions.map((c) => c.toJson()).toList(),
     };
   }
 
@@ -43,8 +48,11 @@ class AppModel {
       topics: (json['topics'] as List<dynamic>?)
           ?.map((t) => TopicModel.fromJson(t as Map<String, dynamic>))
           .toList() ?? [],
-      users: (json['users'] as List<dynamic>?)
+      devices: (json['devices'] as List<dynamic>? ?? json['users'] as List<dynamic>?) // Support legacy 'users' key
           ?.map((u) => UserModel.fromJson(u as Map<String, dynamic>))
+          .toList() ?? [],
+      conditions: (json['conditions'] as List<dynamic>?)
+          ?.map((c) => ConditionModel.fromJson(c as Map<String, dynamic>))
           .toList() ?? [],
     );
   }
@@ -56,7 +64,8 @@ class AppModel {
     String? imageData,
     DateTime? createdAt,
     List<TopicModel>? topics,
-    List<UserModel>? users,
+    List<UserModel>? devices,
+    List<ConditionModel>? conditions,
   }) {
     return AppModel(
       id: id ?? this.id,
@@ -65,7 +74,8 @@ class AppModel {
       imageData: imageData ?? this.imageData,
       createdAt: createdAt ?? this.createdAt,
       topics: topics ?? this.topics,
-      users: users ?? this.users,
+      devices: devices ?? this.devices,
+      conditions: conditions ?? this.conditions,
     );
   }
 }

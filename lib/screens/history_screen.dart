@@ -103,25 +103,28 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                     ],
                   ),
                 )
-              : ListView.builder(
+              : ListView.separated(
                   padding: const EdgeInsets.all(12),
                   itemCount: _notifications.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                       final notification = _notifications[index];
                       return Dismissible(
                         key: Key(notification.id),
                         direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const HeroIcon(
-                            HeroIcons.trash,
-                            color: Colors.white,
-                            size: 20,
+                        background: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            child: const HeroIcon(
+                              HeroIcons.trash,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                         confirmDismiss: (direction) async {
@@ -132,6 +135,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                           return deleted;
                         },
                         child: Card(
+                          margin: EdgeInsets.zero,
                           child: ExpansionTile(
                             leading: _buildAppImage(notification.app),
                             title: Text(notification.title),

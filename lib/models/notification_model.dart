@@ -8,6 +8,7 @@ class NotificationModel {
   final String? imageUrl;
   final Map<String, dynamic>? data;
   final String? topic;
+  final String? condition;
   final List<String>? tokens;
   final DateTime createdAt;
   final bool sent;
@@ -21,6 +22,7 @@ class NotificationModel {
     this.imageUrl,
     this.data,
     this.topic,
+    this.condition,
     this.tokens,
     required this.createdAt,
     this.sent = false,
@@ -36,6 +38,7 @@ class NotificationModel {
       'imageUrl': imageUrl,
       'data': data,
       'topic': topic,
+      'condition': condition,
       'tokens': tokens,
       'createdAt': createdAt.toIso8601String(),
       'sent': sent,
@@ -52,10 +55,41 @@ class NotificationModel {
       imageUrl: json['imageUrl'] as String?,
       data: json['data'] as Map<String, dynamic>?,
       topic: json['topic'] as String?,
+      condition: json['condition'] as String?,
       tokens: json['tokens'] != null ? List<String>.from(json['tokens']) : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
       sent: json['sent'] as bool? ?? false,
       error: json['error'] as String?,
+    );
+  }
+
+  NotificationModel copyWith({
+    String? id,
+    AppModel? app,
+    String? title,
+    String? body,
+    String? imageUrl,
+    Map<String, dynamic>? data,
+    String? topic,
+    String? condition,
+    List<String>? tokens,
+    DateTime? createdAt,
+    bool? sent,
+    String? error,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      app: app ?? this.app,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      imageUrl: imageUrl ?? this.imageUrl,
+      data: data ?? this.data,
+      topic: topic ?? this.topic,
+      condition: condition ?? this.condition,
+      tokens: tokens ?? this.tokens,
+      createdAt: createdAt ?? this.createdAt,
+      sent: sent ?? this.sent,
+      error: error ?? this.error,
     );
   }
 }

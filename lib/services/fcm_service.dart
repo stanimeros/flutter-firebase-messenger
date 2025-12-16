@@ -54,6 +54,7 @@ class FCMService {
     String? imageUrl,
     Map<String, dynamic>? data,
     String? topic,
+    String? condition,
     List<String>? tokens,
   }) async {
     try {
@@ -101,7 +102,9 @@ class FCMService {
       }
       
       // Set target (token, topic, or condition)
-      if (topic != null && topic.isNotEmpty) {
+      if (condition != null && condition.isNotEmpty) {
+        message['condition'] = condition;
+      } else if (topic != null && topic.isNotEmpty) {
         message['topic'] = topic;
       } else if (tokens != null && tokens.isNotEmpty) {
         if (tokens.length == 1) {
@@ -112,7 +115,7 @@ class FCMService {
           message['token'] = tokens.first;
         }
       } else {
-        throw Exception('Either topic or tokens must be provided');
+        throw Exception('Either topic, condition, or tokens must be provided');
       }
       
       final payload = <String, dynamic>{

@@ -3,6 +3,7 @@ import 'package:heroicons/heroicons.dart';
 import '../models/app_model.dart';
 import '../models/topic_model.dart';
 import '../models/user_model.dart';
+import '../models/condition_model.dart';
 import '../services/app_storage_service.dart';
 import '../widgets/custom_app_bar.dart';
 import 'create_app_screen.dart';
@@ -27,15 +28,17 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
   
   late AppModel _currentApp;
   List<TopicModel> _topics = [];
-  List<UserModel> _users = [];
+  List<UserModel> _devices = [];
+  List<ConditionModel> _conditions = [];
 
   @override
   void initState() {
     super.initState();
     _currentApp = widget.app;
     _topics = widget.app.topics;
-    _users = widget.app.users;
-    _tabController = TabController(length: 2, vsync: this);
+    _devices = widget.app.devices;
+    _conditions = widget.app.conditions;
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       setState(() {}); // Rebuild when tab changes to update FAB
     });
@@ -48,38 +51,52 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       setState(() {
         _currentApp = app;
         _topics = app.topics;
-        _users = app.users;
+        _devices = app.devices;
+        _conditions = app.conditions;
       });
     }
   }
 
-  Future<void> _showAddTopicDialog() async {
+  Future<void> _showAddTopicDialog({TopicModel? topicToEdit}) async {
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => const _AddTopicDialog(),
+      builder: (context) => _AddTopicDialog(topicToEdit: topicToEdit),
     );
 
     if (result != null && result.isNotEmpty) {
-      final topic = TopicModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: result,
-        createdAt: DateTime.now(),
-      );
-
-      await _appStorage.addTopic(_currentApp.id, topic);
-      _loadData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Topic added successfully')),
+      if (topicToEdit != null) {
+        // Update existing topic
+        final updatedTopic = TopicModel(
+          id: topicToEdit.id,
+          name: result,
+          createdAt: topicToEdit.createdAt,
         );
-        // Notify parent that data changed
-        widget.onDataChanged?.call();
+        await _appStorage.updateTopic(_currentApp.id, updatedTopic);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Topic updated successfully')),
+          );
+        }
+      } else {
+        // Add new topic
+        final topic = TopicModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: result,
+          createdAt: DateTime.now(),
+        );
+        await _appStorage.addTopic(_currentApp.id, topic);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Topic added successfully')),
+          );
+        }
       }
+      _loadData();
+      widget.onDataChanged?.call();
     }
   }
 
-  Future<void> _deleteTopic(TopicModel topic) async {
+  Future<bool> _deleteTopic(TopicModel topic) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -111,33 +128,49 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
         );
         widget.onDataChanged?.call();
       }
+      return true;
     }
+    return false;
   }
 
-  Future<void> _showAddUserDialog() async {
+  Future<void> _showAddDeviceDialog({UserModel? deviceToEdit}) async {
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (context) => const _AddUserDialog(),
+      builder: (context) => _AddDeviceDialog(deviceToEdit: deviceToEdit),
     );
 
     if (result != null && result.containsKey('name') && result.containsKey('token')) {
-      final user = UserModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: result['name']!,
-        notificationToken: result['token']!,
-        createdAt: DateTime.now(),
-      );
-
-      await _appStorage.addUser(_currentApp.id, user);
-      _loadData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User added successfully')),
+      if (deviceToEdit != null) {
+        // Update existing device
+        final updatedDevice = UserModel(
+          id: deviceToEdit.id,
+          name: result['name']!,
+          notificationToken: result['token']!,
+          createdAt: deviceToEdit.createdAt,
         );
-        // Notify parent that data changed
-        widget.onDataChanged?.call();
+        await _appStorage.updateDevice(_currentApp.id, updatedDevice);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Device updated successfully')),
+          );
+        }
+      } else {
+        // Add new device
+        final device = UserModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: result['name']!,
+          notificationToken: result['token']!,
+          createdAt: DateTime.now(),
+        );
+        await _appStorage.addDevice(_currentApp.id, device);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Device added successfully')),
+          );
+        }
       }
+      _loadData();
+      widget.onDataChanged?.call();
     }
   }
 
@@ -175,12 +208,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     }
   }
 
-  Future<void> _deleteUser(UserModel user) async {
+  Future<bool> _deleteDevice(UserModel device) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete User'),
-        content: Text('Are you sure you want to delete user "${user.name}"?'),
+        title: const Text('Delete Device'),
+        content: Text('Are you sure you want to delete device "${device.name}"?'),
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(context, false),
@@ -199,15 +232,115 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
     );
 
     if (confirm == true) {
-      await _appStorage.deleteUser(_currentApp.id, user.id);
+      await _appStorage.deleteDevice(_currentApp.id, device.id);
       _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User deleted')),
+          const SnackBar(content: Text('Device deleted')),
         );
         widget.onDataChanged?.call();
       }
+      return true;
     }
+    return false;
+  }
+
+  Future<void> _showAddConditionDialog({ConditionModel? conditionToEdit}) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => _AddConditionDialog(
+        topics: _topics,
+        conditions: _conditions.where((c) => c.id != conditionToEdit?.id).toList(), // Exclude self from nested conditions
+        conditionToEdit: conditionToEdit,
+      ),
+    );
+
+    if (result != null && result.containsKey('name') && result.containsKey('operator')) {
+      if (conditionToEdit != null) {
+        // Update existing condition
+        final updatedCondition = ConditionModel(
+          id: conditionToEdit.id,
+          name: result['name']!,
+          operator: result['operator']!,
+          topicIds: (result['topicIds'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+          conditionIds: (result['conditionIds'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+          createdAt: conditionToEdit.createdAt,
+        );
+        await _appStorage.updateCondition(_currentApp.id, updatedCondition);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Condition updated successfully')),
+          );
+        }
+      } else {
+        // Add new condition
+        final condition = ConditionModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: result['name']!,
+          operator: result['operator']!,
+          topicIds: (result['topicIds'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+          conditionIds: (result['conditionIds'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+          createdAt: DateTime.now(),
+        );
+        await _appStorage.addCondition(_currentApp.id, condition);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Condition added successfully')),
+          );
+        }
+      }
+      _loadData();
+      widget.onDataChanged?.call();
+    }
+  }
+
+  Future<bool> _deleteCondition(ConditionModel condition) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Condition'),
+        content: Text('Are you sure you want to delete condition "${condition.name}"?'),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _appStorage.deleteCondition(_currentApp.id, condition.id);
+      _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Condition deleted')),
+        );
+        widget.onDataChanged?.call();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  String _getFABLabel() {
+    final currentIndex = _tabController.index;
+    if (currentIndex == 0) {
+      return 'Add Device';
+    } else if (currentIndex == 1) {
+      return 'Add Topic';
+    } else if (currentIndex == 2) {
+      return 'Add Condition';
+    }
+    return 'Add';
   }
 
   @override
@@ -267,6 +400,17 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    HeroIcon(HeroIcons.devicePhoneMobile, size: 18),
+                    SizedBox(width: 6),
+                    Text('Devices'),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     HeroIcon(HeroIcons.hashtag, size: 18),
                     SizedBox(width: 6),
                     Text('Topics'),
@@ -278,9 +422,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    HeroIcon(HeroIcons.user, size: 18),
+                    HeroIcon(HeroIcons.funnel, size: 18),
                     SizedBox(width: 6),
-                    Text('Users'),
+                    Text('Conditions'),
                   ],
                 ),
               ),
@@ -290,16 +434,30 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
             child: TabBarView(
               controller: _tabController,
               children: [
+                _buildDevicesTab(),
                 _buildTopicsTab(),
-                _buildUsersTab(),
+                _buildConditionsTab(),
               ],
-            ),
+            ),  
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _tabController.index == 0 ? _showAddTopicDialog : _showAddUserDialog,
-        child: HeroIcon(_tabController.index == 0 ? HeroIcons.plus : HeroIcons.plus),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final currentIndex = _tabController.index;
+          if (currentIndex == 0) {
+            // Devices tab
+            _showAddDeviceDialog();
+          } else if (currentIndex == 1) {
+            // Topics tab
+            _showAddTopicDialog();
+          } else if (currentIndex == 2) {
+            // Conditions tab
+            _showAddConditionDialog();
+          }
+        },
+        icon: const HeroIcon(HeroIcons.plus),
+        label: Text(_getFABLabel()),
       ),
     );
   }
@@ -331,29 +489,58 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       );
     }
     
-    return SingleChildScrollView(
+    return ListView.separated(
       padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: _topics.map((topic) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: HeroIcon(HeroIcons.hashtag),
-                ),
-                title: Text(topic.name),
-                trailing: IconButton(
-                  icon: const HeroIcon(HeroIcons.trash),
-                  onPressed: () => _deleteTopic(topic),
-                ),
+      itemCount: _topics.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final topic = _topics[index];
+        return Dismissible(
+          key: Key(topic.id),
+          direction: DismissDirection.endToStart,
+          background: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error,
               ),
-            )).toList(),
-      ),
+              child: const HeroIcon(
+                HeroIcons.trash,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            final deleted = await _deleteTopic(topic);
+            if (deleted) {
+              widget.onDataChanged?.call();
+            }
+            return deleted;
+          },
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: HeroIcon(HeroIcons.hashtag),
+              ),
+              title: Text(topic.name),
+              trailing: IconButton(
+                icon: const HeroIcon(HeroIcons.pencil),
+                onPressed: () => _showAddTopicDialog(topicToEdit: topic),
+                tooltip: 'Edit',
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildUsersTab() {
-    if (_users.isEmpty) {
+  Widget _buildDevicesTab() {
+    if (_devices.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -368,7 +555,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
               ),
               const SizedBox(height: 12),
               Text(
-                'No users added yet',
+                'No devices added yet',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey,
                     ),
@@ -379,34 +566,148 @@ class _AppDetailScreenState extends State<AppDetailScreen> with SingleTickerProv
       );
     }
     
-    return SingleChildScrollView(
+    return ListView.separated(
       padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: _users.map((user) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: HeroIcon(HeroIcons.user),
-                ),
-                title: Text(user.name),
-                subtitle: Text(
-                  user.notificationToken,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: IconButton(
-                  icon: const HeroIcon(HeroIcons.trash),
-                  onPressed: () => _deleteUser(user),
+      itemCount: _devices.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final device = _devices[index];
+        return Dismissible(
+          key: Key(device.id),
+          direction: DismissDirection.endToStart,
+          background: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error,
+              ),
+              child: const HeroIcon(
+                HeroIcons.trash,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            final deleted = await _deleteDevice(device);
+            if (deleted) {
+              widget.onDataChanged?.call();
+            }
+            return deleted;
+          },
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: HeroIcon(HeroIcons.devicePhoneMobile),
+              ),
+              title: Text(device.name),
+              subtitle: Text(
+                device.notificationToken,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: IconButton(
+                icon: const HeroIcon(HeroIcons.pencil),
+                onPressed: () => _showAddDeviceDialog(deviceToEdit: device),
+                tooltip: 'Edit',
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConditionsTab() {
+    if (_conditions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HeroIcon(
+                HeroIcons.inbox,
+                size: 48,
+                style: HeroIconStyle.outline,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No conditions added yet',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return ListView.separated(
+      padding: const EdgeInsets.all(12),
+      itemCount: _conditions.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final condition = _conditions[index];
+        return Dismissible(
+          key: Key(condition.id),
+          direction: DismissDirection.endToStart,
+          background: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error,
+              ),
+              child: const HeroIcon(
+                HeroIcons.trash,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            final deleted = await _deleteCondition(condition);
+            if (deleted) {
+              widget.onDataChanged?.call();
+            }
+            return deleted;
+          },
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Text(
+                  condition.operator,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
-            )).toList(),
-      ),
+              title: Text(condition.name),
+              subtitle: Text(
+                '${condition.topicIds.length} topics, ${condition.conditionIds.length} conditions',
+              ),
+              trailing: IconButton(
+                icon: const HeroIcon(HeroIcons.pencil),
+                onPressed: () => _showAddConditionDialog(conditionToEdit: condition),
+                tooltip: 'Edit',
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 class _AddTopicDialog extends StatefulWidget {
-  const _AddTopicDialog();
+  final TopicModel? topicToEdit;
+
+  const _AddTopicDialog({this.topicToEdit});
 
   @override
   State<_AddTopicDialog> createState() => _AddTopicDialogState();
@@ -414,7 +715,13 @@ class _AddTopicDialog extends StatefulWidget {
 
 class _AddTopicDialogState extends State<_AddTopicDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.topicToEdit?.name ?? '');
+  }
 
   @override
   void dispose() {
@@ -425,7 +732,7 @@ class _AddTopicDialogState extends State<_AddTopicDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Topic'),
+      title: Text(widget.topicToEdit == null ? 'Add Topic' : 'Edit Topic'),
       content: Form(
         key: _formKey,
         child: TextFormField(
@@ -455,24 +762,33 @@ class _AddTopicDialogState extends State<_AddTopicDialog> {
               Navigator.pop(context, _nameController.text.trim());
             }
           },
-          child: const Text('Add'),
+          child: Text(widget.topicToEdit == null ? 'Add' : 'Update'),
         ),
       ],
     );
   }
 }
 
-class _AddUserDialog extends StatefulWidget {
-  const _AddUserDialog();
+class _AddDeviceDialog extends StatefulWidget {
+  final UserModel? deviceToEdit;
+
+  const _AddDeviceDialog({this.deviceToEdit});
 
   @override
-  State<_AddUserDialog> createState() => _AddUserDialogState();
+  State<_AddDeviceDialog> createState() => _AddDeviceDialogState();
 }
 
-class _AddUserDialogState extends State<_AddUserDialog> {
+class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _tokenController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _tokenController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.deviceToEdit?.name ?? '');
+    _tokenController = TextEditingController(text: widget.deviceToEdit?.notificationToken ?? '');
+  }
 
   @override
   void dispose() {
@@ -484,7 +800,7 @@ class _AddUserDialogState extends State<_AddUserDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add User'),
+      title: Text(widget.deviceToEdit == null ? 'Add Device' : 'Edit Device'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -495,8 +811,8 @@ class _AddUserDialogState extends State<_AddUserDialog> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'User Name',
-                  hintText: 'John Doe',
+                  labelText: 'Device Name',
+                  hintText: 'iPhone 15 Pro',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
@@ -541,7 +857,163 @@ class _AddUserDialogState extends State<_AddUserDialog> {
               });
             }
           },
-          child: const Text('Add'),
+          child: Text(widget.deviceToEdit == null ? 'Add' : 'Update'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddConditionDialog extends StatefulWidget {
+  final List<TopicModel> topics;
+  final List<ConditionModel> conditions;
+  final ConditionModel? conditionToEdit;
+
+  const _AddConditionDialog({
+    required this.topics,
+    required this.conditions,
+    this.conditionToEdit,
+  });
+
+  @override
+  State<_AddConditionDialog> createState() => _AddConditionDialogState();
+}
+
+class _AddConditionDialogState extends State<_AddConditionDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late String _operator;
+  late final Set<String> _selectedTopicIds;
+  late final Set<String> _selectedConditionIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.conditionToEdit?.name ?? '');
+    _operator = widget.conditionToEdit?.operator ?? 'AND';
+    _selectedTopicIds = Set<String>.from(widget.conditionToEdit?.topicIds ?? []);
+    _selectedConditionIds = Set<String>.from(widget.conditionToEdit?.conditionIds ?? []);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      contentPadding: const EdgeInsets.all(0),
+      title: Text(widget.conditionToEdit == null ? 'Add Condition' : 'Edit Condition'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Condition Name',
+                    hintText: 'Premium Users',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a condition name';
+                    }
+                    return null;
+                  },
+                  autofocus: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: DropdownButtonFormField<String>(
+                  initialValue: _operator,
+                  decoration: const InputDecoration(
+                    labelText: 'Operator',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'AND', child: Text('AND')),
+                    DropdownMenuItem(value: 'OR', child: Text('OR')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _operator = value;
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: const Text('Select Topics:'),
+              ),
+              const SizedBox(height: 8),
+              ...widget.topics.map((topic) => CheckboxListTile(
+                title: Text(topic.name),
+                value: _selectedTopicIds.contains(topic.id),
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selectedTopicIds.add(topic.id);
+                    } else {
+                      _selectedTopicIds.remove(topic.id);
+                    }
+                  });
+                },
+              )),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: const Text('Select Conditions:'),
+              ),
+              const SizedBox(height: 8),
+              ...widget.conditions.map((condition) => CheckboxListTile(
+                title: Text(condition.name),
+                subtitle: Text('${condition.operator} operator'),
+                value: _selectedConditionIds.contains(condition.id),
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selectedConditionIds.add(condition.id);
+                    } else {
+                      _selectedConditionIds.remove(condition.id);
+                    }
+                  });
+                },
+              )),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate() && 
+                (_selectedTopicIds.isNotEmpty || _selectedConditionIds.isNotEmpty)) {
+              Navigator.pop(context, {
+                'name': _nameController.text.trim(),
+                'operator': _operator,
+                'topicIds': _selectedTopicIds.toList(),
+                'conditionIds': _selectedConditionIds.toList(),
+              });
+            }
+          },
+          child: Text(widget.conditionToEdit == null ? 'Add' : 'Update'),
         ),
       ],
     );

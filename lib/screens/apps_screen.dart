@@ -48,6 +48,42 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
     });
   }
 
+  Future<bool> _deleteApp(AppModel app) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete App'),
+        content: Text('Are you sure you want to delete ${app.name}? This action cannot be undone.'),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _appStorage.deleteApp(app.id);
+      _loadApps();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('App deleted')),
+        );
+      }
+      return true;
+    }
+    return false;
+  }
+
   Widget _buildAppLogo(String? logoImageData, String appName) {
     if (logoImageData == null || logoImageData.isEmpty) {
       return _buildDefaultAvatar(appName);
@@ -126,19 +162,67 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                 ],
               ),
             )
-          : ListView.builder(
+          : ListView.separated(
               padding: const EdgeInsets.all(12),
               itemCount: _apps.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final app = _apps[index];
-                return Card(
-                  child: ListTile(
-                    leading: _buildAppLogo(app.imageData, app.name),
-                    title: Text(app.name),
-                    subtitle: Text(app.packageName),
-                    trailing: IconButton(
-                      icon: const HeroIcon(HeroIcons.arrowRight),
-                      onPressed: () {
+                return Dismissible(
+                  key: Key(app.id),
+                  direction: DismissDirection.endToStart,
+                  background: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      child: const HeroIcon(
+                        HeroIcons.trash,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  confirmDismiss: (direction) async {
+                    final deleted = await _deleteApp(app);
+                    if (deleted) {
+                      widget.onDataChanged?.call();
+                    }
+                    return deleted;
+                  },
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    child: ListTile(
+                      leading: _buildAppLogo(app.imageData, app.name),
+                      title: Text(app.name),
+                      subtitle: Text(app.packageName),
+                      trailing: IconButton(
+                        icon: const HeroIcon(HeroIcons.arrowRight),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AppDetailScreen(
+                                app: app,
+                                onDataChanged: () {
+                                  _loadApps();
+                                  widget.onDataChanged?.call();
+                                },
+                              ),
+                            ),
+                          ).then((result) {
+                            _loadApps();
+                            if (result == true) {
+                              widget.onDataChanged?.call();
+                            }
+                          });
+                        },
+                        tooltip: 'View Details',
+                      ),
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -157,27 +241,7 @@ class _AppsScreenState extends State<AppsScreen> with AutomaticKeepAliveClientMi
                           }
                         });
                       },
-                      tooltip: 'View Details',
                     ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AppDetailScreen(
-                            app: app,
-                            onDataChanged: () {
-                              _loadApps();
-                              widget.onDataChanged?.call();
-                            },
-                          ),
-                        ),
-                      ).then((result) {
-                        _loadApps();
-                        if (result == true) {
-                          widget.onDataChanged?.call();
-                        }
-                      });
-                    },
                   ),
                 );
               },

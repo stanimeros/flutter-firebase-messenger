@@ -210,7 +210,8 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       imageData: _selectedLogoImageData,
       createdAt: widget.app?.createdAt ?? DateTime.now(),
       topics: widget.app?.topics ?? [],
-      users: widget.app?.users ?? [],
+      devices: widget.app?.devices ?? [],
+      conditions: widget.app?.conditions ?? [],
     );
 
     await _appStorage.saveApp(app);
@@ -292,7 +293,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                           child: InputDecorator(
                             isEmpty: true,
                             decoration: InputDecoration(
-                              labelText: 'Pick a json file',
+                              labelText: 'Select a json file',
                             ),
                           ),
                         ),

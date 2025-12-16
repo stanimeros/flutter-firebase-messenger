@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_model.dart';
 import '../models/topic_model.dart';
 import '../models/user_model.dart';
+import '../models/condition_model.dart';
 import 'secure_storage_service.dart';
 
 class AppStorageService {
@@ -58,6 +59,14 @@ class AppStorageService {
     }
   }
 
+  Future<void> updateTopic(String appId, TopicModel topic) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedTopics = app.topics.map((t) => t.id == topic.id ? topic : t).toList();
+      await saveApp(app.copyWith(topics: updatedTopics));
+    }
+  }
+
   Future<void> deleteTopic(String appId, String topicId) async {
     final app = await getAppById(appId);
     if (app != null) {
@@ -66,20 +75,62 @@ class AppStorageService {
     }
   }
 
-  // Helper methods for users
-  Future<void> addUser(String appId, UserModel user) async {
+  // Helper methods for devices (renamed from users)
+  Future<void> addDevice(String appId, UserModel device) async {
     final app = await getAppById(appId);
     if (app != null) {
-      final updatedUsers = List<UserModel>.from(app.users)..add(user);
-      await saveApp(app.copyWith(users: updatedUsers));
+      final updatedDevices = List<UserModel>.from(app.devices)..add(device);
+      await saveApp(app.copyWith(devices: updatedDevices));
     }
   }
 
-  Future<void> deleteUser(String appId, String userId) async {
+  Future<void> updateDevice(String appId, UserModel device) async {
     final app = await getAppById(appId);
     if (app != null) {
-      final updatedUsers = app.users.where((u) => u.id != userId).toList();
-      await saveApp(app.copyWith(users: updatedUsers));
+      final updatedDevices = app.devices.map((d) => d.id == device.id ? device : d).toList();
+      await saveApp(app.copyWith(devices: updatedDevices));
+    }
+  }
+
+  Future<void> deleteDevice(String appId, String deviceId) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedDevices = app.devices.where((u) => u.id != deviceId).toList();
+      await saveApp(app.copyWith(devices: updatedDevices));
+    }
+  }
+
+  // Legacy support - keep for backward compatibility
+  Future<void> addUser(String appId, UserModel user) async {
+    await addDevice(appId, user);
+  }
+
+  Future<void> deleteUser(String appId, String userId) async {
+    await deleteDevice(appId, userId);
+  }
+
+  // Helper methods for conditions
+  Future<void> addCondition(String appId, ConditionModel condition) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedConditions = List<ConditionModel>.from(app.conditions)..add(condition);
+      await saveApp(app.copyWith(conditions: updatedConditions));
+    }
+  }
+
+  Future<void> deleteCondition(String appId, String conditionId) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedConditions = app.conditions.where((c) => c.id != conditionId).toList();
+      await saveApp(app.copyWith(conditions: updatedConditions));
+    }
+  }
+
+  Future<void> updateCondition(String appId, ConditionModel condition) async {
+    final app = await getAppById(appId);
+    if (app != null) {
+      final updatedConditions = app.conditions.map((c) => c.id == condition.id ? condition : c).toList();
+      await saveApp(app.copyWith(conditions: updatedConditions));
     }
   }
 }
