@@ -52,7 +52,10 @@ class GeminiService {
                 {'text': prompt}
               ]
             }
-          ]
+          ],
+          'generationConfig': {
+            'thinking_config': {'thinking_budget': 0} // Skips internal reasoning for speed
+          }
         }),
       );
 
