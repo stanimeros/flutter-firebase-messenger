@@ -50,6 +50,9 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   }
 
   Future<void> _pickJsonFile() async {
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+    
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -174,6 +177,9 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   }
 
   Future<void> _saveApp() async {
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+    
     if (!_formKey.currentState!.validate()) return;
     
     // Check if we have GoogleKeyModel (new file) or need to load from secure storage (existing app)

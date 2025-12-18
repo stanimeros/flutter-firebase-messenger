@@ -901,6 +901,9 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
+                // Dismiss keyboard
+                FocusScope.of(context).unfocus();
+                
                 // Validate form fields first
                 if (!_formKey.currentState!.validate()) {
                   return;
