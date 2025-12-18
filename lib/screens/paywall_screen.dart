@@ -186,9 +186,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
   String _getButtonText() {
     if (_selectedPackage != null && _introlEligibility != null) {
       final hasIntroPrice = _selectedPackage!.storeProduct.introductoryPrice != null;
-      final isEligible = _introlEligibility!.status == IntroEligibilityStatus.introEligibilityStatusEligible;
+      final isIntroEligible = Platform.isIOS ? _introlEligibility!.status == IntroEligibilityStatus.introEligibilityStatusEligible && hasIntroPrice : hasIntroPrice;
       
-      if (hasIntroPrice && isEligible) {
+      if (isIntroEligible) {
         return 'Start your free trial';
       }
     }
@@ -464,10 +464,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final unit = package.storeProduct.introductoryPrice?.periodUnit.name ?? 'day';
     final trialText = '$days $unit trial';
 
-    bool isIntroEligible = introEligibility?.status == IntroEligibilityStatus.introEligibilityStatusEligible;
-    if (Platform.isAndroid && package.storeProduct.introductoryPrice != null){
-      isIntroEligible = true;
-    }
+    final hasIntroPrice = _selectedPackage!.storeProduct.introductoryPrice != null;
+    final isIntroEligible = Platform.isIOS ? introEligibility!.status == IntroEligibilityStatus.introEligibilityStatusEligible && hasIntroPrice : hasIntroPrice;
 
     return InkWell(
       onTap: onTap,
