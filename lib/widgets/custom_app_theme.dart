@@ -25,6 +25,7 @@ class CustomAppTheme {
       ).copyWith(
         surface: darkSurface,
         error: darkError,
+        onError: Colors.white,
       ),
       scaffoldBackgroundColor: darkBackground,
       appBarTheme: AppBarTheme(

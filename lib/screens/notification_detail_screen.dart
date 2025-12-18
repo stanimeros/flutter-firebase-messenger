@@ -368,7 +368,7 @@ class NotificationDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             ActionSlider.standard(
               width: double.infinity,
-              height: 56,
+              height: 64,
               backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
               toggleColor: CustomAppTheme.primaryCyan,
               action: (controller) async {

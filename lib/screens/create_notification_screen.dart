@@ -445,7 +445,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             const SizedBox(height: 24),
             ActionSlider.standard(
               width: double.infinity,
-              height: 56,
+              height: 64,
               backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
               toggleColor: CustomAppTheme.primaryCyan,
               action: (controller) async {
@@ -904,16 +904,16 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                 // Dismiss keyboard
                 FocusScope.of(context).unfocus();
                 
-                // Validate form fields first
-                if (!_formKey.currentState!.validate()) {
-                  return;
-                }
-                
                 // Validate app selection
                 if (_selectedApp == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Please select an app')),
                   );
+                  return;
+                }
+
+                // Validate form fields first
+                if (!_formKey.currentState!.validate()) {
                   return;
                 }
                 

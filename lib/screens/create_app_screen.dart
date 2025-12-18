@@ -322,7 +322,6 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                             ),
                           if (_serviceAccount != null) ...[
                             _buildJsonFieldsExpansion(),
-                            const SizedBox(height: 16),
                           ],
                         ],
                       ),
