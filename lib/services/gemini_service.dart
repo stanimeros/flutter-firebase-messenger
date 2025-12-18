@@ -1,51 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:googleapis_auth/auth_io.dart';
 import 'secure_storage_service.dart';
+import 'token_service.dart';
 
 class GeminiService {
   final _secureStorage = SecureStorageService();
+  final _tokenService = TokenService();
   static const String _geminiApiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-  static const String _generativeLanguageScope = 'https://www.googleapis.com/auth/generative-language';
 
   /// Get access token from service account credentials
   Future<String> _getAccessToken(String appId) async {
-    try {
-      // Get service account credentials from secure storage
-      final serviceAccount = await _secureStorage.getAppCredentials(appId);
-      
-      if (serviceAccount == null) {
-        throw Exception('Service account credentials not found. Please update the app and select the JSON file again.');
-      }
-      
-      // Validate the credentials
-      if (serviceAccount.isEmpty) {
-        throw Exception('Invalid service account JSON. Missing required fields: project_id, client_email, or private_key.');
-      }
-      
-      // Create service account credentials from JSON
-      final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
-      
-      // Obtain authenticated client using clientViaServiceAccount
-      final client = await clientViaServiceAccount(
-        credentials,
-        [_generativeLanguageScope],
-      );
-      
-      // Get access token from the client's credentials
-      final accessToken = client.credentials.accessToken.data;
-      
-      // Close the client as we only need the token
-      client.close();
-      
-      if (accessToken.isEmpty) {
-        throw Exception('Failed to obtain access token from service account.');
-      }
-      
-      return accessToken;
-    } catch (e) {
-      throw Exception('Failed to generate access token: $e');
-    }
+    return _tokenService.getGeminiAccessToken(appId);
   }
 
   /// Check if service account credentials are available for the app
@@ -58,12 +23,18 @@ class GeminiService {
   /// [appId] is the ID of the app to use for service account credentials
   /// [originalText] is the text to refine
   /// [customPrompt] is the custom prompt to use (will include originalText automatically)
-  Future<String?> refineText(String appId, String originalText, String customPrompt) async {
+  /// [accessToken] optional pre-generated access token for better performance
+  Future<String?> refineText(
+    String appId,
+    String originalText,
+    String customPrompt, {
+    String? accessToken,
+  }) async {
     final prompt = '$customPrompt\n\n$originalText';
 
     try {
-      // Get OAuth 2.0 access token from service account
-      final accessToken = await _getAccessToken(appId);
+      // Use provided token or generate one
+      final token = accessToken ?? await _getAccessToken(appId);
 
       // Use the Generative Language API with access token
       final url = Uri.parse(_geminiApiUrl);
@@ -72,7 +43,7 @@ class GeminiService {
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'contents': [

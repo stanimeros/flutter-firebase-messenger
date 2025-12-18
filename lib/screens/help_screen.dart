@@ -119,7 +119,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 8),
                   const Text(
                     'To use this app, you need to enable the following APIs in your Google Cloud project:\n\n'
-                    '1. Generative Language API\n'
+                    '1. Gemini API\n'
                     '   • Required for text refinement features\n'
                     '2. Firebase API\n'
                     '   • Required for sending notifications\n'
@@ -204,7 +204,7 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 8),
                   const Text(
                     '1. Select app\n'
-                    '2. Enter nickname (required)\n'
+                    '2. Enter nickname\n'
                     '3. Enter title and body\n'
                     '4. Select target (device, topic, or condition)\n'
                     '5. Add image URL or custom data (optional)\n'

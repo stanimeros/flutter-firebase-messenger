@@ -10,6 +10,7 @@ import '../services/app_storage_service.dart';
 import '../services/notification_storage_service.dart';
 import '../services/messaging_service.dart';
 import '../services/gemini_service.dart';
+import '../services/token_service.dart';
 import '../widgets/custom_app_theme.dart';
 import '../utils/tools.dart';
 
@@ -43,6 +44,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   final _notificationStorage = NotificationStorageService();
   final _messagingService = MessagingService();
   final _geminiService = GeminiService();
+  final _tokenService = TokenService();
 
   List<AppModel> _apps = [];
   AppModel? _selectedApp;
@@ -56,6 +58,10 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   ConditionModel? _selectedCondition;
   
   final Map<String, String> _customData = {};
+  
+  // Cached access tokens for the selected app
+  String? _geminiToken;
+  String? _fcmToken;
 
   @override
   void initState() {
@@ -148,13 +154,17 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
             orElse: () => apps.first,
           );
           _selectedApp = matchingApp;
-          _loadAppData(matchingApp);
         } else {
           _selectedApp = apps.first;
-          _loadAppData(apps.first);
+        }
+        // Load app data and generate tokens
+        if (_selectedApp != null) {
+          _loadAppData(_selectedApp!);
         }
       } else {
         _selectedApp = null;
+        _geminiToken = null;
+        _fcmToken = null;
       }
     });
   }
@@ -181,6 +191,27 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         _selectedCondition = null;
       });
     }
+    
+    // Generate access tokens for the selected app
+    await _generateTokensForApp(app.id);
+  }
+
+  Future<void> _generateTokensForApp(String appId) async {
+    try {
+      // Generate both tokens in parallel for better performance
+      final tokens = await _tokenService.getBothTokens(appId);
+      setState(() {
+        _geminiToken = tokens['gemini'];
+        _fcmToken = tokens['fcm'];
+      });
+    } catch (e) {
+      // If token generation fails, clear tokens and let services generate them on demand
+      setState(() {
+        _geminiToken = null;
+        _fcmToken = null;
+      });
+      debugPrint('Failed to generate tokens for app $appId: $e');
+    }
   }
 
   Future<void> _showRefineDialog(String fieldType, String originalText) async {
@@ -198,6 +229,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         originalText: originalText,
         geminiService: _geminiService,
         appId: _selectedApp!.id,
+        accessToken: _geminiToken,
       ),
     );
 
@@ -501,6 +533,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         topic: notification.topic,
         condition: notification.condition,
         token: notification.token,
+        accessToken: _fcmToken,
       );
 
       final errorData = success ? null : ErrorUtils.extractErrorCodeAndMessage(Exception('Failed to send notification'));
@@ -621,10 +654,10 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
                       )).toList(),
                       onChanged: _apps.isNotEmpty ? (app) {
                         if (app != null) {
-                          _loadAppData(app);
                           setState(() {
                             _selectedApp = app;
                           });
+                          _loadAppData(app);
                         }
                       } : null,
                     ),
@@ -923,12 +956,14 @@ class _RefineDialog extends StatefulWidget {
   final String originalText;
   final GeminiService geminiService;
   final String appId;
+  final String? accessToken;
 
   const _RefineDialog({
     required this.fieldType,
     required this.originalText,
     required this.geminiService,
     required this.appId,
+    this.accessToken,
   });
 
   @override
@@ -964,6 +999,7 @@ class _RefineDialogState extends State<_RefineDialog> {
         widget.appId,
         widget.originalText,
         _promptController.text.trim(),
+        accessToken: widget.accessToken!,
       );
 
       if (refinedText != null && mounted) {

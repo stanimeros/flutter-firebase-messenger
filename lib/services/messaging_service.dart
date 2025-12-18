@@ -1,50 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:googleapis_auth/auth_io.dart';
 import '../models/app_model.dart';
 import 'secure_storage_service.dart';
+import 'token_service.dart';
 
 class MessagingService {
   final _secureStorage = SecureStorageService();
-  static const _fcmScope = 'https://www.googleapis.com/auth/firebase.messaging';
+  final _tokenService = TokenService();
 
   Future<String> _getAccessToken(String appId) async {
-    try {
-      // Get Google key model from secure storage
-      final serviceAccount = await _secureStorage.getAppCredentials(appId);
-      
-      if (serviceAccount == null) {
-        throw Exception('JSON credentials not found. Please update the app and select the JSON file again.');
-      }
-      
-      // Validate the model
-      if (serviceAccount.isEmpty) {
-        throw Exception('Invalid service account JSON. Missing required fields: project_id, client_email, or private_key.');
-      }
-      
-      // Create service account credentials from JSON string
-      final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
-      
-      // Obtain authenticated client using clientViaServiceAccount
-      final client = await clientViaServiceAccount(
-        credentials,
-        [_fcmScope],
-      );
-      
-      // Get access token from the client's credentials
-      final accessToken = client.credentials.accessToken.data;
-      
-      // Close the client as we only need the token
-      client.close();
-      
-      if (accessToken.isEmpty) {
-        throw Exception('Failed to obtain access token from service account.');
-      }
-      
-      return accessToken;
-    } catch (e) {
-      throw Exception('Failed to generate access token: $e');
-    }
+    return _tokenService.getFcmAccessToken(appId);
   }
 
   Future<bool> sendNotification({
@@ -56,10 +21,11 @@ class MessagingService {
     String? topic,
     String? condition,
     String? token,
+    String? accessToken,
   }) async {
     try {
-      // Get OAuth 2.0 access token
-      final accessToken = await _getAccessToken(app.id);
+      // Use provided token or generate one
+      final fcmToken = accessToken ?? await _getAccessToken(app.id);
 
       // Get service account data to extract project_id
       final serviceAccount = await _secureStorage.getAppCredentials(app.id);
@@ -120,7 +86,7 @@ class MessagingService {
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
+          'Authorization': 'Bearer $fcmToken',
         },
         body: jsonEncode(payload),
       );
