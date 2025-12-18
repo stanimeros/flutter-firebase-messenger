@@ -1,8 +1,10 @@
 import 'package:fire_message/screens/main_screen.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/custom_app_theme.dart';
 
 const String _entitlementId = 'premium';
@@ -190,19 +192,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         return 'Monthly';
       case PackageType.annual:
         return 'Annual';
-      case PackageType.sixMonth:
-        return '6 Months';
-      case PackageType.threeMonth:
-        return '3 Months';
-      case PackageType.twoMonth:
-        return '2 Months';
-      case PackageType.weekly:
-        return 'Weekly';
-      case PackageType.lifetime:
-        return 'Lifetime';
-      case PackageType.custom:
-        return 'Custom';
-      case PackageType.unknown:
+      default:
         return 'Unknown';
     }
   }
@@ -217,6 +207,57 @@ class _PaywallScreenState extends State<PaywallScreen> {
       }
     }
     return 'Subscribe Now';
+  }
+
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open $url'),
+            backgroundColor: CustomAppTheme.darkError,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildTermsAndPrivacyText(BuildContext context) {
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: CustomAppTheme.darkOnSurface.withValues(alpha: 0.5),
+              fontSize: 11,
+            ),
+        children: [
+          const TextSpan(text: 'By subscribing, you agree to our '),
+          TextSpan(
+            text: 'Terms of Use',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: CustomAppTheme.primaryCyan,
+                  fontSize: 11,
+                ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _launchURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
+          ),
+          const TextSpan(text: ' and '),
+          TextSpan(
+            text: 'Privacy Policy',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: CustomAppTheme.primaryCyan,
+                  fontSize: 11,
+                ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _launchURL('https://stanimeros.com/privacy-policy'),
+          ),
+          const TextSpan(text: '. Subscription will auto-renew unless cancelled.'),
+        ],
+      ),
+    );
   }
 
   @override
@@ -344,14 +385,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ),
                     const SizedBox(height: 12),
                     // Terms and privacy
-                    Text(
-                      'By subscribing, you agree to our Terms of Service and Privacy Policy. Subscription will auto-renew unless cancelled.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: CustomAppTheme.darkOnSurface.withValues(alpha: 0.5),
-                            fontSize: 11,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
+                    _buildTermsAndPrivacyText(context),
                   ],
                 ),
               ),
@@ -497,7 +531,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    package.storeProduct.title,
+                    package.storeProduct.title.substring(0, 7),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: CustomAppTheme.darkOnSurface.withValues(alpha: 0.7),
                         ),
@@ -511,18 +545,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 Text(
                   package.storeProduct.priceString,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: CustomAppTheme.primaryCyan,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: CustomAppTheme.primaryCyan,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 if (introEligibility?.status == IntroEligibilityStatus.introEligibilityStatusEligible) ...[
                   const SizedBox(height: 4),
                   Text(
                     trialText,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: CustomAppTheme.primaryCyan,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: CustomAppTheme.primaryCyan,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ],

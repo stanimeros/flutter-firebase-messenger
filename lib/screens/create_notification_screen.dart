@@ -184,12 +184,20 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
   }
 
   Future<void> _showRefineDialog(String fieldType, String originalText) async {
+    if (_selectedApp == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an app first')),
+      );
+      return;
+    }
+
     final result = await showDialog<String>(
       context: context,
       builder: (context) => _RefineDialog(
         fieldType: fieldType,
         originalText: originalText,
         geminiService: _geminiService,
+        appId: _selectedApp!.id,
       ),
     );
 
@@ -914,11 +922,13 @@ class _RefineDialog extends StatefulWidget {
   final String fieldType;
   final String originalText;
   final GeminiService geminiService;
+  final String appId;
 
   const _RefineDialog({
     required this.fieldType,
     required this.originalText,
     required this.geminiService,
+    required this.appId,
   });
 
   @override
@@ -951,6 +961,7 @@ class _RefineDialogState extends State<_RefineDialog> {
 
     try {
       final refinedText = await widget.geminiService.refineText(
+        widget.appId,
         widget.originalText,
         _promptController.text.trim(),
       );

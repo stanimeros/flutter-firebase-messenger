@@ -108,6 +108,37 @@ class _HelpScreenState extends State<HelpScreen> with SingleTickerProviderStateM
                 children: [
                   Row(
                     children: [
+                      const HeroIcon(HeroIcons.key, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'API Access Requirements',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'To use this app, you need to enable the following APIs in your Google Cloud project:\n\n'
+                    '1. Generative Language API\n'
+                    '   • Required for text refinement features\n'
+                    '2. Firebase API\n'
+                    '   • Required for sending notifications\n'
+                    '3. Service Account Permissions\n'
+                    '   • Your service account must have the "Firebase Cloud Messaging API Admin" role'
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
                       const HeroIcon(HeroIcons.plusCircle, size: 24),
                       const SizedBox(width: 8),
                       Text(

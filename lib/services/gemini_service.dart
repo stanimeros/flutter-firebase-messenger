@@ -1,50 +1,78 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:googleapis_auth/auth_io.dart';
+import 'secure_storage_service.dart';
 
 class GeminiService {
+  final _secureStorage = SecureStorageService();
   static const String _geminiApiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  static const String _generativeLanguageScope = 'https://www.googleapis.com/auth/generative-language';
 
-  /// Get the API key for the current platform from .env
-  String? _getApiKey() {
-    final isIOS = Platform.isIOS;
-    return isIOS 
-        ? dotenv.env['GEMINI_IOS_API_KEY']
-        : dotenv.env['GEMINI_ANDROID_API_KEY'];
+  /// Get access token from service account credentials
+  Future<String> _getAccessToken(String appId) async {
+    try {
+      // Get service account credentials from secure storage
+      final serviceAccount = await _secureStorage.getAppCredentials(appId);
+      
+      if (serviceAccount == null) {
+        throw Exception('Service account credentials not found. Please update the app and select the JSON file again.');
+      }
+      
+      // Validate the credentials
+      if (serviceAccount.isEmpty) {
+        throw Exception('Invalid service account JSON. Missing required fields: project_id, client_email, or private_key.');
+      }
+      
+      // Create service account credentials from JSON
+      final credentials = ServiceAccountCredentials.fromJson(serviceAccount);
+      
+      // Obtain authenticated client using clientViaServiceAccount
+      final client = await clientViaServiceAccount(
+        credentials,
+        [_generativeLanguageScope],
+      );
+      
+      // Get access token from the client's credentials
+      final accessToken = client.credentials.accessToken.data;
+      
+      // Close the client as we only need the token
+      client.close();
+      
+      if (accessToken.isEmpty) {
+        throw Exception('Failed to obtain access token from service account.');
+      }
+      
+      return accessToken;
+    } catch (e) {
+      throw Exception('Failed to generate access token: $e');
+    }
   }
 
-  String? _getBundleId() {
-    final isIOS = Platform.isIOS;
-    return isIOS 
-        ? dotenv.env['IOS_BUNDLE_ID']
-        : dotenv.env['ANDROID_PACKAGE_NAME'];
-  }
-
-  /// Check if API key is set for the current platform
-  bool hasApiKey() {
-    final apiKey = _getApiKey();
-    return apiKey != null && apiKey.isNotEmpty;
+  /// Check if service account credentials are available for the app
+  Future<bool> hasCredentials(String appId) async {
+    final credentials = await _secureStorage.getAppCredentials(appId);
+    return credentials != null && credentials.isNotEmpty;
   }
 
   /// Refine text using Gemini API
+  /// [appId] is the ID of the app to use for service account credentials
   /// [originalText] is the text to refine
   /// [customPrompt] is the custom prompt to use (will include originalText automatically)
-  Future<String?> refineText(String originalText, String customPrompt) async {
-    final apiKey = _getApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('Gemini API key not set in .env file. Please configure GEMINI_IOS_API_KEY or GEMINI_ANDROID_API_KEY.');
-    }
-
+  Future<String?> refineText(String appId, String originalText, String customPrompt) async {
     final prompt = '$customPrompt\n\n$originalText';
 
     try {
-      final url = Uri.parse('$_geminiApiUrl?key=$apiKey');
+      // Get OAuth 2.0 access token from service account
+      final accessToken = await _getAccessToken(appId);
+
+      // Use the Generative Language API with access token
+      final url = Uri.parse(_geminiApiUrl);
+      
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
-          if (Platform.isIOS) 'X-Ios-Bundle-Identifier': _getBundleId() ?? '',
+          'Authorization': 'Bearer $accessToken',
         },
         body: jsonEncode({
           'contents': [
