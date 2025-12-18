@@ -25,6 +25,8 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final _secureStorage = SecureStorageService();
   Map<String, dynamic>? _serviceAccount;
   String? _selectedLogoImageData; // Base64 encoded image data
+  bool _understandEncryption = false;
+  bool _acceptLiability = false;
 
   @override
   void initState() {
@@ -200,6 +202,19 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
       return;
     }
 
+    // Check if both checkboxes are checked (only for new apps or when JSON is selected)
+    if (serviceAccount != null && (!_understandEncryption || !_acceptLiability)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please accept both terms before creating the app'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
     final appId = widget.app?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
     
     if (serviceAccount == null) {
@@ -251,63 +266,89 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Logo picker
-                      GestureDetector(
-                        onTap: _pickLogoFile,
-                        child: _buildLogoPreview(),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'App Name',
-                          hintText: 'My Awesome App',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter app name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _packageController,
-                        decoration: const InputDecoration(
-                          labelText: 'Package Name',
-                          hintText: 'com.example.app',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter package name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      if (_serviceAccount == null)
-                        InkWell(
-                          onTap: _pickJsonFile,
-                          borderRadius: BorderRadius.circular(8),
-                          child: InputDecorator(
-                            isEmpty: true,
-                            decoration: InputDecoration(
-                              labelText: 'Select a json file',
-                            ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Logo picker
+                          GestureDetector(
+                            onTap: _pickLogoFile,
+                            child: _buildLogoPreview(),
                           ),
-                        ),
-                      if (_serviceAccount != null) ...[
-                        _buildJsonFieldsExpansion(),
-                      ],
-                    ],
-                  ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'App Name',
+                              hintText: 'My Awesome App',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter app name';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _packageController,
+                            decoration: const InputDecoration(
+                              labelText: 'Package Name',
+                              hintText: 'com.example.app',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter package name';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          if (_serviceAccount == null)
+                            InkWell(
+                              onTap: _pickJsonFile,
+                              borderRadius: BorderRadius.circular(8),
+                              child: InputDecorator(
+                                isEmpty: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Select a json file',
+                                ),
+                              ),
+                            ),
+                          if (_serviceAccount != null) ...[
+                            _buildJsonFieldsExpansion(),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      ),
+                    ),
+                    CheckboxListTile(
+                      title: const Text('I understand that my key is encrypted and stored only on this device.', style: TextStyle(fontSize: 13)),
+                      value: _understandEncryption,
+                      onChanged: (value) {
+                        setState(() {
+                          _understandEncryption = value ?? false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    CheckboxListTile(
+                      title: const Text('I understand that I am responsible for any google account or billing issues.', style: TextStyle(fontSize: 13)),
+                      value: _acceptLiability,
+                      onChanged: (value) {
+                        setState(() {
+                          _acceptLiability = value ?? false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
