@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fire_message/screens/main_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -94,15 +96,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
           );
         }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Purchase was cancelled'),
-              backgroundColor: CustomAppTheme.darkError,
-            ),
-          );
-        }
       }
     } on PurchasesError catch (e) {
       if (e.code != PurchasesErrorCode.purchaseCancelledError) {
@@ -125,14 +118,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Purchase failed: $e'),
-            backgroundColor: CustomAppTheme.darkError,
-          ),
-        );
-      }
+      debugPrint('Purchase failed: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -477,6 +463,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final days = package.storeProduct.introductoryPrice?.periodNumberOfUnits ?? 0;
     final unit = package.storeProduct.introductoryPrice?.periodUnit.name ?? 'day';
     final trialText = '$days $unit trial';
+
+    bool isIntroEligible = introEligibility?.status == IntroEligibilityStatus.introEligibilityStatusEligible;
+    if (Platform.isAndroid && package.storeProduct.introductoryPrice != null){
+      isIntroEligible = true;
+    }
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -549,7 +541,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (introEligibility?.status == IntroEligibilityStatus.introEligibilityStatusEligible) ...[
+                if (isIntroEligible) ...[
                   const SizedBox(height: 4),
                   Text(
                     trialText,
