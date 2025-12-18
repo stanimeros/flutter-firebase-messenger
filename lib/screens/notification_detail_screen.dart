@@ -192,7 +192,7 @@ class NotificationDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _getStatusCode(notification),
+                          notification.resultCode ?? 'Unknown',
                           style: TextStyle(
                             color: notification.sent ? Colors.green : Colors.red,
                             fontWeight: FontWeight.bold,
@@ -224,7 +224,7 @@ class NotificationDetailScreen extends StatelessWidget {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            _getStatusMessage(notification),
+                            notification.resultMessage ?? 'Unknown error occurred',
                             style: TextStyle(
                               color: notification.sent ? Colors.green : Colors.red,
                               fontWeight: FontWeight.w500,
@@ -263,14 +263,6 @@ class NotificationDetailScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _getStatusCode(NotificationModel notification) {
-    return notification.resultCode ?? (notification.sent ? '200' : 'Error');
-  }
-
-  String _getStatusMessage(NotificationModel notification) {
-    return notification.resultMessage ?? (notification.sent ? 'Sent' : 'Failed');
   }
 
   Widget _buildInfoCard(BuildContext context, String label, String value, {required HeroIcons icon}) {
@@ -406,7 +398,7 @@ class NotificationDetailScreen extends StatelessWidget {
     final notificationStorage = NotificationStorageService();
 
     try {
-      final success = await messagingService.sendNotification(
+      final response = await messagingService.sendNotification(
         app: notification.app,
         title: notification.title,
         body: notification.body,
@@ -417,12 +409,13 @@ class NotificationDetailScreen extends StatelessWidget {
         token: notification.token,
       );
 
+      final success = response['code'] == '200';
       final updatedNotification = notification.copyWith(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         createdAt: DateTime.now(),
         sent: success,
-        resultCode: success ? '200' : null,
-        resultMessage: success ? 'Notification resent successfully' : null,
+        resultCode: response['code'],
+        resultMessage: response['message'],
       );
 
       await notificationStorage.saveNotification(updatedNotification);
@@ -431,23 +424,20 @@ class NotificationDetailScreen extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(success ? 'Notification resent successfully' : 'Failed to resend notification'),
+              content: Text(response['message'] ?? (success ? 'Notification resent successfully' : 'Failed to resend notification')),
               backgroundColor: success ? Colors.green : Theme.of(context).colorScheme.error,
             ),
           );
           onDataChanged?.call();
         }
       }
-    } catch (e) {
-      // Parse error to extract code and message
-      final errorData = ErrorUtils.extractErrorCodeAndMessage(e);
-      
+    } catch (e) {      
       final updatedNotification = notification.copyWith(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         createdAt: DateTime.now(),
         sent: false,
-        resultCode: errorData?['code'],
-        resultMessage: errorData?['message'],
+        resultCode: 'ERROR',
+        resultMessage: e.toString(),
       );
 
       await notificationStorage.saveNotification(updatedNotification);

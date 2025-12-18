@@ -12,7 +12,6 @@ import '../services/messaging_service.dart';
 import '../services/gemini_service.dart';
 import '../services/token_service.dart';
 import '../widgets/custom_app_theme.dart';
-import '../utils/tools.dart';
 
 class CreateNotificationScreen extends StatefulWidget {
   final void Function(VoidCallback)? onRefreshCallback;
@@ -524,7 +523,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         nickname: _nicknameController.text.trim(),
       );
 
-      final success = await _messagingService.sendNotification(
+      final response = await _messagingService.sendNotification(
         app: _selectedApp!,
         title: notification.title,
         body: notification.body,
@@ -536,11 +535,11 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         accessToken: _fcmToken,
       );
 
-      final errorData = success ? null : ErrorUtils.extractErrorCodeAndMessage(Exception('Failed to send notification'));
+      final success = response['code'] == '200';
       final savedNotification = notification.copyWith(
         sent: success,
-        resultCode: success ? '200' : errorData?['code'],
-        resultMessage: success ? 'Notification sent successfully' : errorData?['message'],
+        resultCode: response['code'],
+        resultMessage: response['message'],
       );
 
       await _notificationStorage.saveNotification(savedNotification);
@@ -548,7 +547,7 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Notification sent successfully' : 'Failed to send notification'),
+            content: Text(response['message'] ?? (success ? 'Notification sent successfully' : 'Failed to send notification')),
             backgroundColor: success ? Colors.green : Theme.of(context).colorScheme.error,
           ),
         );
@@ -583,9 +582,6 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         condition = _selectedCondition!.buildConditionString(_topics, _conditions);
       }
       
-      // Parse error to extract code and message
-      final errorData = ErrorUtils.extractErrorCodeAndMessage(e);
-      
       final notification = NotificationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         app: _selectedApp!,
@@ -599,8 +595,8 @@ class _CreateNotificationScreenState extends State<CreateNotificationScreen> wit
         createdAt: DateTime.now(),
         sent: false,
         nickname: _nicknameController.text.trim(),
-        resultCode: errorData?['code'],
-        resultMessage: errorData?['message'],
+        resultCode: 'ERROR',
+        resultMessage: e.toString(),
       );
 
       await _notificationStorage.saveNotification(notification);
@@ -1024,10 +1020,9 @@ class _RefineDialogState extends State<_RefineDialog> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        debugPrint('Error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(e.toString()),
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 4),
           ),

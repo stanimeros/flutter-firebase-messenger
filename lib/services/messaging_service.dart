@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/app_model.dart';
 import 'secure_storage_service.dart';
@@ -12,7 +13,7 @@ class MessagingService {
     return _tokenService.getFcmAccessToken(appId);
   }
 
-  Future<bool> sendNotification({
+  Future<Map<String, String?>> sendNotification({
     required AppModel app,
     required String title,
     required String body,
@@ -23,66 +24,86 @@ class MessagingService {
     String? token,
     String? accessToken,
   }) async {
+    String? fcmToken;
+    String? projectId;
+    
+    // Handle pre-HTTP errors (token generation, credentials, etc.)
     try {
       // Use provided token or generate one
-      final fcmToken = accessToken ?? await _getAccessToken(app.id);
+      fcmToken = accessToken ?? await _getAccessToken(app.id);
 
       // Get service account data to extract project_id
       final serviceAccount = await _secureStorage.getAppCredentials(app.id);
-      final projectId = serviceAccount?['project_id'];
+      projectId = serviceAccount?['project_id'];
+    } catch (e) {
+      debugPrint('Pre-HTTP error: $e');
+      // Try to extract status code from error message if it contains one
+      final statusCodeMatch = RegExp(r'\b(\d{3})\b').firstMatch(e.toString());
+      final extractedCode = statusCodeMatch?.group(1);
       
-      // Use FCM HTTP v1 API endpoint
-      final url = Uri.parse('https://fcm.googleapis.com/v1/projects/$projectId/messages:send');
-      
-      // Build the message payload according to v1 API format
-      final message = <String, dynamic>{
+      return {
+        'code': extractedCode ?? 'ERROR',
+        'message': e.toString(),
+      };
+    }
+    
+    // Use FCM HTTP v1 API endpoint
+    final url = Uri.parse('https://fcm.googleapis.com/v1/projects/$projectId/messages:send');
+    
+    // Build the message payload according to v1 API format
+    final message = <String, dynamic>{
+      'notification': {
+        'title': title,
+        'body': body,
+      },
+      if (data != null) 'data': data,
+    };
+
+    // Add image URL to platform-specific fields if provided
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      message['android'] = {
         'notification': {
-          'title': title,
-          'body': body,
+          'image': imageUrl,
         },
-        if (data != null) 'data': data,
       };
-
-      // Add image URL to platform-specific fields if provided
-      if (imageUrl != null && imageUrl.isNotEmpty) {
-        message['android'] = {
-          'notification': {
-            'image': imageUrl,
+      message['apns'] = {
+        'payload': {
+          'aps': {
+            'mutable-content': 1,
           },
-        };
-        message['apns'] = {
-          'payload': {
-            'aps': {
-              'mutable-content': 1,
-            },
-          },
-          'fcm_options': {
-            'image': imageUrl,
-          },
-        };
-        message['webpush'] = {
-          'headers': {
-            'image': imageUrl,
-          },
-        };
-      }
-      
-      // Set target (token, topic, or condition)
-      if (condition != null && condition.isNotEmpty) {
-        message['condition'] = condition;
-      } else if (topic != null && topic.isNotEmpty) {
-        message['topic'] = topic;
-      } else if (token != null && token.isNotEmpty) {
-        message['token'] = token;
-      } else {
-        throw Exception('Either topic, condition, or token must be provided');
-      }
-      
-      final payload = <String, dynamic>{
-        'message': message,
+        },
+        'fcm_options': {
+          'image': imageUrl,
+        },
       };
+      message['webpush'] = {
+        'headers': {
+          'image': imageUrl,
+        },
+      };
+    }
+    
+    // Set target (token, topic, or condition)
+    if (condition != null && condition.isNotEmpty) {
+      message['condition'] = condition;
+    } else if (topic != null && topic.isNotEmpty) {
+      message['topic'] = topic;
+    } else if (token != null && token.isNotEmpty) {
+      message['token'] = token;
+    } else {
+      return {
+        'code': '400',
+        'message': 'Either topic, condition, or token must be provided',
+      };
+    }
+    
+    final payload = <String, dynamic>{
+      'message': message,
+    };
 
-      final response = await http.post(
+    http.Response response;
+    try {
+      response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
@@ -90,24 +111,50 @@ class MessagingService {
         },
         body: jsonEncode(payload),
       );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-        // v1 API returns success with a 'name' field containing the message ID
-        if (responseData['name'] != null) {
-          return true;
-        }
-      }
-      
-      // Log error for debugging
-      if (response.statusCode != 200) {
-        throw Exception('FCM API error: ${response.statusCode} - ${response.body}');
-      }
-      
-      return false;
     } catch (e) {
-      rethrow;
+      debugPrint('Network error: $e');
+      return {
+        'code': 'NETWORK_ERROR',
+        'message': 'Network error: ${e.toString()}',
+      };
     }
+
+    final code = response.statusCode;
+    Map<String, dynamic> responseData = {};
+    
+    try {
+      if (response.body.isNotEmpty) {
+        responseData = jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('Failed to parse response: $e');
+      return {
+        'code': code.toString(),
+        'message': 'Failed to parse response: ${response.body}',
+      };
+    }
+
+    if (code == 200) {
+      if (responseData['name'] != null) {
+        // Return the actual response message from FCM
+        final messageId = responseData['name']?.toString() ?? '';
+        return {
+          'code': code.toString(),
+          'message': messageId.isNotEmpty ? 'Message ID: $messageId' : 'Notification sent successfully',
+        };
+      }
+    }
+
+    // Handle error response - always return the HTTP status code
+    final errorObj = responseData['error'] as Map<String, dynamic>?;
+    final errorMessage = errorObj?['message']?.toString() ?? 
+      responseData['message']?.toString() ?? 
+      'Unknown error occurred';
+
+    return {
+      'code': code.toString(),
+      'message': errorMessage,
+    };
   }
 }
 
